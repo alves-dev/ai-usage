@@ -1,0 +1,17 @@
+{
+  "domain": "ia_usage",
+  "name": "IA Usage",
+  "codeowners": [
+    "@alves-dev"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "webhook"
+  ],
+  "documentation": "https://github.com/alves-dev/ia-usage",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/alves-dev/ia-usage/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

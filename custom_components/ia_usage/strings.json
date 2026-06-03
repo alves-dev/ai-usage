@@ -1,0 +1,33 @@
+{
+  "title": "IA Usage",
+  "config": {
+    "step": {
+      "user": {
+        "title": "IA Usage webhook",
+        "description": "Configure the endpoint ID used by /api/webhook/{webhook_id}. Keep this value hard to guess.",
+        "data": {
+          "webhook_id": "Webhook endpoint ID"
+        },
+        "data_description": {
+          "webhook_id": "Use letters, numbers, underscores, or hyphens. The final path is /api/webhook/{webhook_id}."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure IA Usage webhook",
+        "description": "Update the endpoint ID used by /api/webhook/{webhook_id}.",
+        "data": {
+          "webhook_id": "Webhook endpoint ID"
+        },
+        "data_description": {
+          "webhook_id": "Use letters, numbers, underscores, or hyphens. The integration reloads after this value changes."
+        }
+      }
+    },
+    "error": {
+      "invalid_webhook_id": "Use 8 to 128 characters containing only letters, numbers, underscores, or hyphens."
+    },
+    "abort": {
+      "already_configured": "IA Usage is already configured."
+    }
+  }
+}
