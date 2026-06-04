@@ -7,10 +7,6 @@ on:
         description: "Release version, with or without leading v"
         required: true
         type: string
-      text:
-        description: "Release notes"
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -60,7 +56,8 @@ jobs:
           {
             echo "version=$version"
             echo "tag=$tag"
-            echo "title=IA Usage $tag"
+            echo "title=$tag"
+            echo "body=# $tag"
           } >> "$GITHUB_OUTPUT"
 
       - name: Update manifest version
@@ -99,7 +96,7 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           name: ${{ steps.release.outputs.title }}
-          body: ${{ inputs.text }}
+          body: ${{ steps.release.outputs.body }}
           draft: false
           prerelease: false
         env:
