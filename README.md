@@ -344,7 +344,7 @@ Copy the integration to a local Home Assistant Core checkout:
 .dev/copy-to-core.sh
 ```
 
-More local notes are in [docs/development.md](docs/development.md).
+More local notes are in [docs/development.md](.dev/development.md).
 
 ## GitHub Actions
 
