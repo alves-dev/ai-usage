@@ -338,6 +338,19 @@ Run tests:
 uv run pytest
 ```
 
+Validate against a specific Home Assistant release in an isolated environment:
+
+```bash
+scripts/validate-homeassistant-version.sh 2026.5.0
+```
+
+When no version is provided, the script defaults to `2026.5.0`. Additional
+pytest arguments can be passed after the version:
+
+```bash
+scripts/validate-homeassistant-version.sh 2026.5.0 tests/test_ingestion.py
+```
+
 Copy the integration to a local Home Assistant Core checkout:
 
 ```bash
@@ -363,6 +376,12 @@ The development environment pins:
 
 ```toml
 homeassistant==2026.6.0
+```
+
+Compatibility checks can be run without changing that pin by using:
+
+```bash
+scripts/validate-homeassistant-version.sh 2026.5.0
 ```
 
 The integration manifest currently has no Python package requirements because
