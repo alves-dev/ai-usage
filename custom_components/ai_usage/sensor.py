@@ -236,13 +236,32 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         icon="mdi:gauge",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=lambda state: _codex_window_number(
             state,
             "primary_window",
             "used_percent",
         ),
         attributes_fn=lambda state: _codex_used_attributes(state, "primary_window"),
+    ),
+    AIUsageAccountSensorDescription(
+        key="primary_window_available_percent",
+        name="Primary window available",
+        icon="mdi:gauge-empty",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda state: _available_percent(
+            _codex_window_number(
+                state,
+                "primary_window",
+                "used_percent",
+            )
+        ),
+        attributes_fn=lambda state: _codex_available_attributes(
+            state,
+            "primary_window",
+        ),
     ),
     AIUsageAccountSensorDescription(
         key="primary_window_reset_at",
@@ -274,8 +293,9 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         name="Primary window reset after",
         icon="mdi:timer-sand",
         device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        value_fn=lambda state: _codex_window_number(
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        suggested_display_precision=2,
+        value_fn=lambda state: _codex_window_hours(
             state,
             "primary_window",
             "reset_after_seconds",
@@ -284,7 +304,12 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
             {
                 "reset_at": _iso(
                     _codex_window_datetime(state, "primary_window", "reset_at")
-                )
+                ),
+                "reset_after_seconds": _codex_window_number(
+                    state,
+                    "primary_window",
+                    "reset_after_seconds",
+                ),
             }
         ),
     ),
@@ -294,13 +319,32 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         icon="mdi:gauge-low",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=lambda state: _codex_window_number(
             state,
             "secondary_window",
             "used_percent",
         ),
         attributes_fn=lambda state: _codex_used_attributes(state, "secondary_window"),
+    ),
+    AIUsageAccountSensorDescription(
+        key="secondary_window_available_percent",
+        name="Secondary window available",
+        icon="mdi:gauge-empty",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda state: _available_percent(
+            _codex_window_number(
+                state,
+                "secondary_window",
+                "used_percent",
+            )
+        ),
+        attributes_fn=lambda state: _codex_available_attributes(
+            state,
+            "secondary_window",
+        ),
     ),
     AIUsageAccountSensorDescription(
         key="secondary_window_reset_at",
@@ -332,8 +376,9 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         name="Secondary window reset after",
         icon="mdi:timer-sand-complete",
         device_class=SensorDeviceClass.DURATION,
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        value_fn=lambda state: _codex_window_number(
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        suggested_display_precision=2,
+        value_fn=lambda state: _codex_window_hours(
             state,
             "secondary_window",
             "reset_after_seconds",
@@ -342,7 +387,12 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
             {
                 "reset_at": _iso(
                     _codex_window_datetime(state, "secondary_window", "reset_at")
-                )
+                ),
+                "reset_after_seconds": _codex_window_number(
+                    state,
+                    "secondary_window",
+                    "reset_after_seconds",
+                ),
             }
         ),
     ),
@@ -356,13 +406,32 @@ OLLAMA_CLOUD_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = 
         icon="mdi:speedometer",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=lambda state: _ollama_usage_number(
             state,
             "session_usage",
             "used_percent",
         ),
         attributes_fn=lambda state: _ollama_used_attributes(state, "session_usage"),
+    ),
+    AIUsageAccountSensorDescription(
+        key="session_usage_available_percent",
+        name="Session usage available",
+        icon="mdi:speedometer",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda state: _available_percent(
+            _ollama_usage_number(
+                state,
+                "session_usage",
+                "used_percent",
+            )
+        ),
+        attributes_fn=lambda state: _ollama_available_attributes(
+            state,
+            "session_usage",
+        ),
     ),
     AIUsageAccountSensorDescription(
         key="session_usage_reset_at",
@@ -391,13 +460,32 @@ OLLAMA_CLOUD_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = 
         icon="mdi:chart-donut",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
+        suggested_display_precision=0,
         value_fn=lambda state: _ollama_usage_number(
             state,
             "weekly_usage",
             "used_percent",
         ),
         attributes_fn=lambda state: _ollama_used_attributes(state, "weekly_usage"),
+    ),
+    AIUsageAccountSensorDescription(
+        key="weekly_usage_available_percent",
+        name="Weekly usage available",
+        icon="mdi:chart-donut",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=0,
+        value_fn=lambda state: _available_percent(
+            _ollama_usage_number(
+                state,
+                "weekly_usage",
+                "used_percent",
+            )
+        ),
+        attributes_fn=lambda state: _ollama_available_attributes(
+            state,
+            "weekly_usage",
+        ),
     ),
     AIUsageAccountSensorDescription(
         key="weekly_usage_reset_at",
@@ -701,6 +789,25 @@ def _codex_used_attributes(state: AccountState, window_key: str) -> dict[str, An
     )
 
 
+def _codex_available_attributes(
+    state: AccountState,
+    window_key: str,
+) -> dict[str, Any]:
+    """Return attributes for Codex available-percent sensors."""
+    window_label = "primary" if window_key == "primary_window" else "secondary"
+    return _drop_none(
+        {
+            "window": window_label,
+            "used_percent": _codex_window_number(
+                state,
+                window_key,
+                "used_percent",
+            ),
+            "reset_at": _iso(_codex_window_datetime(state, window_key, "reset_at")),
+        }
+    )
+
+
 def _ollama_used_attributes(state: AccountState, usage_key: str) -> dict[str, Any]:
     """Return attributes for Ollama Cloud used-percent sensors."""
     window_label = "session" if usage_key == "session_usage" else "weekly"
@@ -710,6 +817,32 @@ def _ollama_used_attributes(state: AccountState, usage_key: str) -> dict[str, An
             "reset_at": _iso(_ollama_usage_datetime(state, usage_key, "reset_at")),
         }
     )
+
+
+def _ollama_available_attributes(
+    state: AccountState,
+    usage_key: str,
+) -> dict[str, Any]:
+    """Return attributes for Ollama Cloud available-percent sensors."""
+    window_label = "session" if usage_key == "session_usage" else "weekly"
+    return _drop_none(
+        {
+            "window": window_label,
+            "used_percent": _ollama_usage_number(
+                state,
+                usage_key,
+                "used_percent",
+            ),
+            "reset_at": _iso(_ollama_usage_datetime(state, usage_key, "reset_at")),
+        }
+    )
+
+
+def _available_percent(used_percent: int | float | None) -> float | None:
+    """Return available percentage derived from a used percentage."""
+    if used_percent is None:
+        return None
+    return max(0.0, min(100.0, 100.0 - float(used_percent)))
 
 
 def _codex_window_number(
@@ -725,6 +858,18 @@ def _codex_window_number(
         value_key,
     )
     return _number_or_none(value)
+
+
+def _codex_window_hours(
+    state: AccountState,
+    window_key: str,
+    value_key: str,
+) -> float | None:
+    """Return a Codex duration field converted from seconds to hours."""
+    seconds = _codex_window_number(state, window_key, value_key)
+    if seconds is None:
+        return None
+    return round(float(seconds) / 3600, 2)
 
 
 def _codex_window_datetime(
