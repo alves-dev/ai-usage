@@ -303,11 +303,12 @@ proxima request do webhook.
   representar o estado como `unknown`.
 - Estados textuais devem usar `snake_case` e ser estaveis para automacoes.
 - Percentuais devem ser numericos de `0` a `100`, unidade `%`,
-  `state_class: measurement` e precisao sugerida de 1 casa decimal.
+  `state_class: measurement` e precisao sugerida de 0 casas decimais.
 - Timestamps devem ser objetos `datetime` timezone-aware em UTC; exemplos neste
   documento estao em ISO 8601.
-- Duracoes devem usar segundos (`s`) e `SensorDeviceClass.DURATION` quando
-  disponivel.
+- Duracoes expostas como entidade devem usar minutos (`min`) ou horas (`h`) e
+  `SensorDeviceClass.DURATION` quando disponivel. O payload pode continuar
+  usando segundos quando esse for o contrato do provider.
 - Nao gravar payload bruto como atributo por padrao. Se necessario para debug,
   criar uma entidade diagnostica desabilitada por padrao.
 
@@ -369,6 +370,9 @@ com `image_url` apontando para o logo do provider. Para o caso atual, o
 
 Representa `plan_data.type`.
 
+Este sensor nao e diagnostico. O plano e uma caracteristica da conta que pode
+ser exibida em dashboards e usada em automacoes, mesmo quando muda pouco.
+
 Exemplo:
 
 ```yaml
@@ -395,6 +399,10 @@ attributes:
 ### `sensor.status`
 
 Representa `status` do envelope.
+
+Este status descreve a ultima amostra reportada pelo provider para a conta. Ele
+nao substitui sensores especificos do provider, como `binary_sensor.allowed`,
+que descrevem uma decisao de limite/uso dentro de um payload valido.
 
 Estados aceitos:
 
@@ -492,7 +500,8 @@ attributes:
 
 ### `sensor.collected_at`
 
-Representa `collected_at` do payload.
+Representa `collected_at` do payload, ou seja, quando o coletor leu o estado no
+provider.
 
 Exemplo:
 
@@ -510,7 +519,9 @@ attributes:
 
 ### `sensor.last_received_at`
 
-Representa a data/hora em que o Home Assistant recebeu a request.
+Representa a data/hora em que o Home Assistant recebeu a request. Pode ser igual
+a `collected_at` quando o coletor envia imediatamente, mas deve ser mantido
+separado para diagnosticar atraso, fila ou coletor travado.
 
 Exemplo:
 
@@ -581,11 +592,13 @@ O provider `codex` usa `provider_data.rate_limit`.
 | `allowed` | `binary_sensor` | uso permitido | nenhuma | nenhuma | `on` |
 | `limit_reached` | `binary_sensor` | limite atingido | problem | nenhuma | `off` |
 | `primary_window_used_percent` | `sensor` | percentual usado da janela primaria | measurement | `%` | `1` |
+| `primary_window_available_percent` | `sensor` | percentual disponivel da janela primaria | measurement | `%` | `99` |
 | `primary_window_reset_at` | `sensor` | reset da janela primaria | timestamp | nenhuma | `2026-06-02T20:26:55+00:00` |
-| `primary_window_reset_after` | `sensor` | segundos ate reset na amostra | duration | `s` | `18000` |
+| `primary_window_reset_after` | `sensor` | horas ate reset na amostra | duration | `h` | `5` |
 | `secondary_window_used_percent` | `sensor` | percentual usado da janela secundaria | measurement | `%` | `18` |
+| `secondary_window_available_percent` | `sensor` | percentual disponivel da janela secundaria | measurement | `%` | `82` |
 | `secondary_window_reset_at` | `sensor` | reset da janela secundaria | timestamp | nenhuma | `2026-06-07T20:50:29+00:00` |
-| `secondary_window_reset_after` | `sensor` | segundos ate reset na amostra | duration | `s` | `429815` |
+| `secondary_window_reset_after` | `sensor` | horas ate reset na amostra | duration | `h` | `119.39` |
 
 ### `binary_sensor.allowed`
 
@@ -594,6 +607,11 @@ Mapeamento:
 ```text
 provider_data.rate_limit.allowed -> is_on
 ```
+
+`allowed` indica se o Codex permite novas requisicoes de uso neste momento,
+conforme a resposta de rate limit. Ele pode ser lido junto com `status`: `status`
+explica se a amostra da conta foi coletada corretamente; `allowed` explica se o
+uso esta permitido dentro dessa amostra.
 
 Exemplo:
 
@@ -607,7 +625,9 @@ is_on: true
 attributes:
   limit_reached: false
   primary_window_used_percent: 1
+  primary_window_available_percent: 99
   secondary_window_used_percent: 18
+  secondary_window_available_percent: 82
 ```
 
 ### `binary_sensor.limit_reached`
@@ -652,12 +672,38 @@ has_entity_name: true
 name: "Primary window used"
 native_unit_of_measurement: "%"
 state_class: measurement
-suggested_display_precision: 1
+suggested_display_precision: 0
 native_value: 1
 attributes:
   window: primary
   limit_window_seconds: 18000
   reset_after_seconds: 18000
+  reset_at: "2026-06-02T20:26:55+00:00"
+```
+
+### `sensor.primary_window_available_percent`
+
+Mapeamento:
+
+```text
+100 - provider_data.rate_limit.primary_window.used_percent -> native_value
+```
+
+Exemplo:
+
+```yaml
+platform: sensor
+unique_id: "<device_key>:primary_window_available_percent"
+device: "AI Usage Codex user@example.com"
+has_entity_name: true
+name: "Primary window available"
+native_unit_of_measurement: "%"
+state_class: measurement
+suggested_display_precision: 0
+native_value: 99
+attributes:
+  window: primary
+  used_percent: 1
   reset_at: "2026-06-02T20:26:55+00:00"
 ```
 
@@ -695,6 +741,9 @@ Mapeamento:
 provider_data.rate_limit.primary_window.reset_after_seconds -> native_value
 ```
 
+O valor do payload esta em segundos, mas o estado da entidade deve ser convertido
+para horas.
+
 Exemplo:
 
 ```yaml
@@ -704,10 +753,11 @@ device: "AI Usage Codex user@example.com"
 has_entity_name: true
 name: "Primary window reset after"
 device_class: duration
-native_unit_of_measurement: "s"
-native_value: 18000
+native_unit_of_measurement: "h"
+native_value: 5
 attributes:
   reset_at: "2026-06-02T20:26:55+00:00"
+  reset_after_seconds: 18000
 ```
 
 ### `sensor.secondary_window_used_percent`
@@ -722,12 +772,32 @@ has_entity_name: true
 name: "Secondary window used"
 native_unit_of_measurement: "%"
 state_class: measurement
-suggested_display_precision: 1
+suggested_display_precision: 0
 native_value: 18
 attributes:
   window: secondary
   limit_window_seconds: 604800
   reset_after_seconds: 429815
+  reset_at: "2026-06-07T20:50:29+00:00"
+```
+
+### `sensor.secondary_window_available_percent`
+
+Exemplo:
+
+```yaml
+platform: sensor
+unique_id: "<device_key>:secondary_window_available_percent"
+device: "AI Usage Codex user@example.com"
+has_entity_name: true
+name: "Secondary window available"
+native_unit_of_measurement: "%"
+state_class: measurement
+suggested_display_precision: 0
+native_value: 82
+attributes:
+  window: secondary
+  used_percent: 18
   reset_at: "2026-06-07T20:50:29+00:00"
 ```
 
@@ -759,10 +829,11 @@ device: "AI Usage Codex user@example.com"
 has_entity_name: true
 name: "Secondary window reset after"
 device_class: duration
-native_unit_of_measurement: "s"
-native_value: 429815
+native_unit_of_measurement: "h"
+native_value: 119.39
 attributes:
   reset_at: "2026-06-07T20:50:29+00:00"
+  reset_after_seconds: 429815
 ```
 
 ## Provider: Ollama Cloud
@@ -775,8 +846,10 @@ O provider `ollama_cloud` usa `provider_data.session_usage` e
 | Entity key | Plataforma | Estado | Classe | Unidade | Exemplo |
 | --- | --- | --- | --- | --- | --- |
 | `session_usage_used_percent` | `sensor` | uso da sessao | measurement | `%` | `0` |
+| `session_usage_available_percent` | `sensor` | uso disponivel da sessao | measurement | `%` | `100` |
 | `session_usage_reset_at` | `sensor` | reset da sessao | timestamp | nenhuma | `2026-05-31T19:00:00+00:00` |
-| `weekly_usage_used_percent` | `sensor` | uso semanal | measurement | `%` | `4.4` |
+| `weekly_usage_used_percent` | `sensor` | uso semanal | measurement | `%` | `4` |
+| `weekly_usage_available_percent` | `sensor` | uso semanal disponivel | measurement | `%` | `96` |
 | `weekly_usage_reset_at` | `sensor` | reset semanal | timestamp | nenhuma | `2026-06-01T00:00:00+00:00` |
 
 ### `sensor.session_usage_used_percent`
@@ -798,10 +871,36 @@ has_entity_name: true
 name: "Session usage used"
 native_unit_of_measurement: "%"
 state_class: measurement
-suggested_display_precision: 1
+suggested_display_precision: 0
 native_value: 0
 attributes:
   window: session
+  reset_at: "2026-05-31T19:00:00+00:00"
+```
+
+### `sensor.session_usage_available_percent`
+
+Mapeamento:
+
+```text
+100 - provider_data.session_usage.used_percent -> native_value
+```
+
+Exemplo:
+
+```yaml
+platform: sensor
+unique_id: "<device_key>:session_usage_available_percent"
+device: "AI Usage Ollama Cloud alves-dev"
+has_entity_name: true
+name: "Session usage available"
+native_unit_of_measurement: "%"
+state_class: measurement
+suggested_display_precision: 0
+native_value: 100
+attributes:
+  window: session
+  used_percent: 0
   reset_at: "2026-05-31T19:00:00+00:00"
 ```
 
@@ -847,10 +946,36 @@ has_entity_name: true
 name: "Weekly usage used"
 native_unit_of_measurement: "%"
 state_class: measurement
-suggested_display_precision: 1
-native_value: 4.4
+suggested_display_precision: 0
+native_value: 4
 attributes:
   window: weekly
+  reset_at: "2026-06-01T00:00:00+00:00"
+```
+
+### `sensor.weekly_usage_available_percent`
+
+Mapeamento:
+
+```text
+100 - provider_data.weekly_usage.used_percent -> native_value
+```
+
+Exemplo:
+
+```yaml
+platform: sensor
+unique_id: "<device_key>:weekly_usage_available_percent"
+device: "AI Usage Ollama Cloud alves-dev"
+has_entity_name: true
+name: "Weekly usage available"
+native_unit_of_measurement: "%"
+state_class: measurement
+suggested_display_precision: 0
+native_value: 96
+attributes:
+  window: weekly
+  used_percent: 4
   reset_at: "2026-06-01T00:00:00+00:00"
 ```
 
@@ -902,9 +1027,11 @@ attributes:
 | `provider_data.rate_limit.allowed` | `binary_sensor.allowed` |
 | `provider_data.rate_limit.limit_reached` | `binary_sensor.limit_reached` |
 | `provider_data.rate_limit.primary_window.used_percent` | `sensor.primary_window_used_percent` |
+| `provider_data.rate_limit.primary_window.used_percent` | `sensor.primary_window_available_percent` |
 | `provider_data.rate_limit.primary_window.reset_at` | `sensor.primary_window_reset_at` |
 | `provider_data.rate_limit.primary_window.reset_after_seconds` | `sensor.primary_window_reset_after` |
 | `provider_data.rate_limit.secondary_window.used_percent` | `sensor.secondary_window_used_percent` |
+| `provider_data.rate_limit.secondary_window.used_percent` | `sensor.secondary_window_available_percent` |
 | `provider_data.rate_limit.secondary_window.reset_at` | `sensor.secondary_window_reset_at` |
 | `provider_data.rate_limit.secondary_window.reset_after_seconds` | `sensor.secondary_window_reset_after` |
 
@@ -913,8 +1040,10 @@ attributes:
 | Payload | Entidade |
 | --- | --- |
 | `provider_data.session_usage.used_percent` | `sensor.session_usage_used_percent` |
+| `provider_data.session_usage.used_percent` | `sensor.session_usage_available_percent` |
 | `provider_data.session_usage.reset_at` | `sensor.session_usage_reset_at` |
 | `provider_data.weekly_usage.used_percent` | `sensor.weekly_usage_used_percent` |
+| `provider_data.weekly_usage.used_percent` | `sensor.weekly_usage_available_percent` |
 | `provider_data.weekly_usage.reset_at` | `sensor.weekly_usage_reset_at` |
 
 ## Tratamento De Erros

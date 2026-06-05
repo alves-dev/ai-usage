@@ -991,7 +991,27 @@ State class:
 
 Precisao sugerida:
 
-- 1 casa decimal.
+- 0 casas decimais.
+
+### sensor.primary_window_available_percent
+
+Mapeamento:
+
+```text
+100 - provider_data.rate_limit.primary_window.used_percent
+```
+
+Unidade:
+
+- `%`
+
+State class:
+
+- `measurement`
+
+Precisao sugerida:
+
+- 0 casas decimais.
 
 ### sensor.primary_window_reset_at
 
@@ -1017,9 +1037,13 @@ Mapeamento:
 provider_data.rate_limit.primary_window.reset_after_seconds
 ```
 
+Conversao:
+
+- segundos do payload para horas no estado da entidade.
+
 Unidade:
 
-- `s`
+- `h`
 
 Device class:
 
@@ -1043,7 +1067,27 @@ State class:
 
 Precisao sugerida:
 
-- 1 casa decimal.
+- 0 casas decimais.
+
+### sensor.secondary_window_available_percent
+
+Mapeamento:
+
+```text
+100 - provider_data.rate_limit.secondary_window.used_percent
+```
+
+Unidade:
+
+- `%`
+
+State class:
+
+- `measurement`
+
+Precisao sugerida:
+
+- 0 casas decimais.
 
 ### sensor.secondary_window_reset_at
 
@@ -1069,9 +1113,13 @@ Mapeamento:
 provider_data.rate_limit.secondary_window.reset_after_seconds
 ```
 
+Conversao:
+
+- segundos do payload para horas no estado da entidade.
+
 Unidade:
 
-- `s`
+- `h`
 
 Device class:
 
@@ -1104,7 +1152,27 @@ State class:
 
 Precisao sugerida:
 
-- 1 casa decimal.
+- 0 casas decimais.
+
+### sensor.session_usage_available_percent
+
+Mapeamento:
+
+```text
+100 - provider_data.session_usage.used_percent
+```
+
+Unidade:
+
+- `%`
+
+State class:
+
+- `measurement`
+
+Precisao sugerida:
+
+- 0 casas decimais.
 
 ### sensor.session_usage_reset_at
 
@@ -1140,7 +1208,27 @@ State class:
 
 Precisao sugerida:
 
-- 1 casa decimal.
+- 0 casas decimais.
+
+### sensor.weekly_usage_available_percent
+
+Mapeamento:
+
+```text
+100 - provider_data.weekly_usage.used_percent
+```
+
+Unidade:
+
+- `%`
+
+State class:
+
+- `measurement`
+
+Precisao sugerida:
+
+- 0 casas decimais.
 
 ### sensor.weekly_usage_reset_at
 
@@ -1400,7 +1488,7 @@ Cenarios:
 - `limit_reached` reflete `rate_limit.limit_reached`.
 - Percentuais das janelas sao numericos.
 - `reset_at` Unix epoch vira `datetime` UTC.
-- `reset_after_seconds` vira duracao em segundos.
+- `reset_after_seconds` vira duracao em horas.
 - Campo ausente deixa entidade como `unknown`, sem quebrar webhook valido se o
   contrato permitir ausencia.
 
