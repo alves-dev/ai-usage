@@ -74,7 +74,9 @@ External collector -> Home Assistant webhook -> AI Usage -> Sensors
 ```
 
 This makes it possible to use different sources in the future, such as browser
-extensions, local scripts, or other small collectors.
+extensions, local scripts, or other small collectors. If you want a ready-made
+option, you can use the browser extension at
+https://github.com/alves-dev/ai-usage-extension or implement your own collector.
 
 ## What You See In Home Assistant
 
