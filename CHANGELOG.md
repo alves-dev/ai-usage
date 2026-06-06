@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-06-06
+
 ### Added
 
 - Added available percentage sensors for Codex and Ollama Cloud usage windows.
