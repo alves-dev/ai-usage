@@ -85,14 +85,14 @@ each identified AI account.
 
 ### Main Webhook Device
 
-| Entity                            | Type          | What it shows                                                                                                      |
-|-----------------------------------|---------------|--------------------------------------------------------------------------------------------------------------------|
-| `sensor.last_ingest_status`       | Sensor        | Result of the last webhook request handled by Home Assistant, such as `ok`, `invalid_json`, or `invalid_contract`. |
-| `binary_sensor.webhook_problem`   | Binary sensor | Turns on when the last webhook request failed validation or ingestion.                                             |
-| `sensor.last_webhook_received_at` | Sensor        | When Home Assistant received the latest webhook request.                                                           |
+| Entity                            | Type          | What it shows                                                                                                         |
+|-----------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------|
+| `sensor.last_ingest_status`       | Sensor        | Result of the last webhook request handled by Home Assistant, such as `ok`, `invalid_json`, or `invalid_contract`.    |
+| `binary_sensor.webhook_problem`   | Binary sensor | Turns on when the last webhook request failed validation or ingestion.                                                |
+| `sensor.last_webhook_received_at` | Sensor        | When Home Assistant received the latest webhook request.                                                              |
 | `sensor.last_source`              | Sensor        | Collector source of the latest valid payload, such as `browser_extension` or `python_collector`. Disabled by default. |
-| `sensor.known_accounts`           | Sensor        | Number of AI accounts currently known by the integration.                                                          |
-| `sensor.last_unscoped_error`      | Sensor        | Last provider error that could not be tied to a specific account. Disabled by default.                             |
+| `sensor.known_accounts`           | Sensor        | Number of AI accounts currently known by the integration.                                                             |
+| `sensor.last_unscoped_error`      | Sensor        | Last provider error that could not be tied to a specific account. Disabled by default.                                |
 
 ### Account Devices
 
@@ -102,7 +102,7 @@ each identified AI account.
 | `sensor.plan`             | Sensor        | Account plan from `plan_data.type`, such as `free`, `plus`, or `pro`. This is a normal account sensor, not a diagnostic-only sensor, because it can be useful in dashboards and automations. |
 | `sensor.status`           | Sensor        | Provider status for the latest account sample, such as `ok`, `not_authenticated`, `rate_limited`, or `provider_unavailable`.                                                                 |
 | `binary_sensor.problem`   | Binary sensor | Turns on when `sensor.status` is not `ok`.                                                                                                                                                   |
-| `sensor.last_sample_age`  | Sensor        | Age of the last sample received for that account, in minutes. Helps detect stale data even when the last status was `ok`.                                                                      |
+| `sensor.last_sample_age`  | Sensor        | Age of the last sample received for that account, in minutes. Helps detect stale data even when the last status was `ok`.                                                                    |
 | `sensor.last_error`       | Sensor        | Last provider error code for the account, or `none` when the latest sample has no error. Disabled by default.                                                                                |
 | `sensor.collected_at`     | Sensor        | When the external collector read the usage data from the provider. Disabled by default.                                                                                                      |
 | `sensor.last_received_at` | Sensor        | When Home Assistant received that account sample. Disabled by default. Enable it to compare with `collected_at` for collector delay, queueing, or stale data.                                |
@@ -150,6 +150,86 @@ each identified AI account.
 Some diagnostic entities are disabled by default to keep new installations
 focused on operational sensors. Enable them manually in Home Assistant when you
 need collector/source debugging, raw receive timestamps, or request counters.
+
+## Lovelace Card
+
+This repository includes a small custom Lovelace card example for the two-window
+usage view described by the integration sensors.
+
+Source file:
+
+- [examples/lovelace/ai-usage-windows-card.js](examples/lovelace/ai-usage-windows-card.js)
+
+The card follows Home Assistant custom card conventions:
+
+- it reads only Home Assistant entities;
+- it uses `ha-card` and Home Assistant theme variables;
+- it stays provider-agnostic by accepting entity IDs in the card config.
+
+Card configuration:
+
+- `name`: provider or account name shown in the header
+- `subtitle`: optional secondary text below the name
+- `icon_url`: optional image URL for the header icon
+- `icon`: optional MDI icon when `icon_url` is not used
+- `status_entity`: entity that drives the status chip in the header
+- `primary_name`: display name for the first window
+- `primary_available_entity`: available percentage entity for the first window
+- `primary_reset_entity`: reset timestamp entity for the first window
+- `secondary_name`: display name for the second window
+- `secondary_available_entity`: available percentage entity for the second window
+- `secondary_reset_entity`: reset timestamp entity for the second window
+
+To use it:
+
+1. Copy `examples/lovelace/ai-usage-windows-card.js` to
+   `/config/www/ai-usage-windows-card.js`.
+2. Add it as a dashboard resource.
+3. Create a manual card with one of the examples below.
+
+Dashboard resource:
+
+```yaml
+url: /local/ai-usage-windows-card.js
+type: module
+```
+
+Example for Codex:
+
+```yaml
+type: custom:ai-usage-windows-card
+name: Codex
+subtitle: OpenAI Plus
+icon_url: /local/codex.png
+status_entity: binary_sensor.allowed
+primary_name: 5-hour window
+primary_available_entity: sensor.five_hour_usage_available_percent
+primary_reset_entity: sensor.five_hour_usage_reset_at
+secondary_name: Weekly window
+secondary_available_entity: sensor.weekly_usage_available_percent
+secondary_reset_entity: sensor.weekly_usage_reset_at
+```
+
+Example for Ollama Cloud:
+
+```yaml
+type: custom:ai-usage-windows-card
+name: Ollama Cloud
+subtitle: Pro
+icon: mdi:robot-outline
+status_entity: sensor.status
+primary_name: Session window
+primary_available_entity: sensor.session_usage_available_percent
+primary_reset_entity: sensor.session_usage_reset_at
+secondary_name: Weekly window
+secondary_available_entity: sensor.weekly_usage_available_percent
+secondary_reset_entity: sensor.weekly_usage_reset_at
+```
+
+Optional tuning:
+
+- `warning_threshold`: defaults to `40`
+- `critical_threshold`: defaults to `15`
 
 ## HACS Installation
 
