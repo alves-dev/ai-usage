@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 
 from custom_components.ai_usage.binary_sensor import (
+    CODEX_BINARY_SENSOR_DESCRIPTIONS,
     COMMON_ACCOUNT_BINARY_SENSOR_DESCRIPTIONS,
     INTEGRATION_BINARY_SENSOR_DESCRIPTIONS,
     AIUsageAccountBinarySensor,
@@ -62,6 +63,34 @@ def test_binary_sensor_helpers_handle_valid_and_invalid_values() -> None:
     assert _codex_window_number(state, "rate_limit", "used") is None
     assert _codex_window_number(state, "five_hour_window", "used") is None
     assert _drop_none({"a": 1, "b": None}) == {"a": 1}
+
+
+def test_all_codex_binary_sensor_descriptions_are_evaluable() -> None:
+    """Every Codex binary sensor description must evaluate a complete sample."""
+    state = AccountState(
+        provider="codex",
+        account_key="acct-test",
+        account_key_quality="stable",
+        account_label="Test",
+        provider_data={
+            "rate_limit": {
+                "allowed": True,
+                "limit_reached": False,
+                "five_hour_window": {"used_percent": 12.5},
+                "weekly_window": {"used_percent": 37.2},
+            }
+        },
+    )
+
+    for description in CODEX_BINARY_SENSOR_DESCRIPTIONS:
+        description.value_fn(state)
+        description.attributes_fn(state)
+
+    state.provider_data["rate_limit"]["five_hour_window"] = None
+    state.provider_data["rate_limit"]["weekly_window"] = None
+    for description in CODEX_BINARY_SENSOR_DESCRIPTIONS:
+        description.value_fn(state)
+        description.attributes_fn(state)
 
 
 def test_description_selection_and_device_info() -> None:

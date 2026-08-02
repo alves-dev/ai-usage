@@ -144,6 +144,23 @@ def test_codex_window_sensors_are_empty_when_window_is_unavailable(
     assert description.attributes_fn(state) == {"window": "five_hour"}
 
 
+def test_all_codex_sensor_descriptions_are_evaluable(
+    codex_payload: dict[str, Any],
+) -> None:
+    """Every Codex sensor description must evaluate a complete sample."""
+    state = AccountState(
+        provider="codex",
+        account_key="acct-test",
+        account_key_quality="stable",
+        account_label="test@example.com",
+        provider_data=deepcopy(codex_payload["provider_data"]),
+    )
+
+    for description in CODEX_SENSOR_DESCRIPTIONS:
+        description.value_fn(state)
+        description.attributes_fn(state)
+
+
 def test_ollama_available_percent_is_derived_from_used_percent(
     ollama_payload: dict[str, Any],
 ) -> None:
