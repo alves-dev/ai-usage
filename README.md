@@ -1,7 +1,6 @@
-# AI Usage
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/alves-dev/ai-usage/main/custom_components/ai_usage/brand/ai_usage_v5_512.png" alt="AI Usage" width="128">
+   <img src="custom_components/ai_usage/brand/dark_logo.png" alt="AI Usage" width="254">
 </p>
 
 <p align="center">
@@ -23,8 +22,9 @@
   <img alt="Providers" src="https://img.shields.io/badge/Providers-Codex%20%7C%20Ollama%20Cloud-7C3AED?style=flat-square">
 </p>
 
-See the [Home Assistant compatibility matrix](docs/compatibility.md) for the
-tested integration and Home Assistant version combinations.
+<p align="center">
+   See the [Home Assistant compatibility matrix](docs/compatibility.md) for the tested integration and Home Assistant version combinations.
+</p>
 
 <p align="center">
   <a href="https://sonar.alves-dev.com/dashboard?id=ai-usage">
@@ -61,8 +61,7 @@ It is designed for simple dashboard questions:
 The integration currently supports data from [`Codex`, `Ollama Cloud`]:
 
 <p>
-   <img src="docs/images/openai.png" alt="OpenAI" width="120">
-   <img src="docs/images/ollama.png" alt="Ollama" width="120">
+   <img src="docs/images/tools-supports.png" alt="Ollama" width="774">
 </p>
 
 
