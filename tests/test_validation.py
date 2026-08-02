@@ -106,7 +106,7 @@ def test_unsupported_provider(codex_payload: dict[str, Any]) -> None:
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("schema_version", "2.0", "schema_version must be 1.0"),
+        ("schema_version", "2.0", "schema_version must be 1.1"),
         ("source", "unknown_source", "source is not supported"),
         ("account_data", [], "account_data must be an object"),
         ("plan_data", [], "plan_data must be an object"),
@@ -166,12 +166,38 @@ def test_codex_requires_rate_limit(codex_payload: dict[str, Any]) -> None:
 def test_codex_rejects_invalid_percent(codex_payload: dict[str, Any]) -> None:
     """Codex percentages must be within 0-100."""
     payload = clone_payload(codex_payload)
-    payload["provider_data"]["rate_limit"]["primary_window"]["used_percent"] = 101
+    payload["provider_data"]["rate_limit"]["five_hour_window"]["used_percent"] = 101
 
     _assert_validation_error(
         payload,
         INGEST_STATUS_INVALID_CONTRACT,
         "used_percent must be <= 100",
+    )
+
+
+def test_codex_accepts_missing_five_hour_window(
+    codex_payload: dict[str, Any],
+) -> None:
+    """Codex may report an unavailable five-hour window as null."""
+    payload = clone_payload(codex_payload)
+    payload["provider_data"]["rate_limit"]["five_hour_window"] = None
+
+    envelope = validate_payload(payload)
+
+    assert envelope.provider_data["rate_limit"]["five_hour_window"] is None
+
+
+def test_codex_rejects_legacy_window_names(codex_payload: dict[str, Any]) -> None:
+    """The semantic window contract must reject legacy provider field names."""
+    payload = clone_payload(codex_payload)
+    rate_limit = payload["provider_data"]["rate_limit"]
+    rate_limit["primary_window"] = rate_limit.pop("five_hour_window")
+    rate_limit["secondary_window"] = rate_limit.pop("weekly_window")
+
+    _assert_validation_error(
+        payload,
+        INGEST_STATUS_INVALID_CONTRACT,
+        "five_hour_window must be an object",
     )
 
 

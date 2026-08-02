@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -117,6 +118,30 @@ def test_codex_available_percent_is_derived_from_used_percent(
         description.attributes_fn(state)["used_percent"]
         == EXPECTED_PRIMARY_USED_PERCENT
     )
+
+
+def test_codex_window_sensors_are_empty_when_window_is_unavailable(
+    codex_payload: dict[str, Any],
+) -> None:
+    """Codex sensors must not reuse another window when one is null."""
+    provider_data = deepcopy(codex_payload["provider_data"])
+    provider_data["rate_limit"]["five_hour_window"] = None
+    state = AccountState(
+        provider="codex",
+        account_key="acct-test",
+        account_key_quality="stable",
+        account_label="test@example.com",
+        provider_data=provider_data,
+    )
+
+    description = next(
+        item
+        for item in CODEX_SENSOR_DESCRIPTIONS
+        if item.key == "five_hour_usage_used_percent"
+    )
+
+    assert description.value_fn(state) is None
+    assert description.attributes_fn(state) == {"window": "five_hour"}
 
 
 def test_ollama_available_percent_is_derived_from_used_percent(

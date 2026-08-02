@@ -19,7 +19,7 @@ PROVIDER_NAMES = {
     PROVIDER_OLLAMA_CLOUD: "Ollama Cloud",
 }
 
-PAYLOAD_SCHEMA_VERSION = "1.0"
+PAYLOAD_SCHEMA_VERSION = "1.1"
 KNOWN_SOURCES = (
     "browser_extension",
     "shell_script",

@@ -71,14 +71,14 @@ Exemplo de `DeviceInfo`:
 
 Entidades associadas:
 
-| Entidade | Estado | Categoria | Exemplo de estado | Observacoes |
-| --- | --- | --- | --- | --- |
-| `sensor.last_ingest_status` | `ok` ou codigo de erro de ingestao | diagnostic | `ok` | Resultado da ultima request recebida pelo webhook, independente do status do provider. |
-| `binary_sensor.webhook_problem` | `on` quando a ultima ingestao falhou | diagnostic | `off` | `device_class: problem`. Use para alertas de webhook quebrado. |
-| `sensor.last_webhook_received_at` | timestamp | diagnostic | `2026-06-02T15:40:01+00:00` | Data/hora em que o HA recebeu a ultima request. |
-| `sensor.last_source` | source do ultimo payload valido | diagnostic | `browser_extension` | Desabilitado por padrao. Atributos devem incluir `source_version`, `schema_version`, `provider` e `account_key` quando disponiveis. |
-| `sensor.known_accounts` | numero inteiro | diagnostic | `2` | Total de contas dinamicas conhecidas pela integracao. |
-| `sensor.last_unscoped_error` | `none` ou codigo de erro | diagnostic | `not_authenticated` | Desabilitado por padrao. Usado quando o payload tem erro mas nao tem dados suficientes para identificar a conta. |
+| Entidade                          | Estado                               | Categoria  | Exemplo de estado           | Observacoes                                                                                                                         |
+|-----------------------------------|--------------------------------------|------------|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| `sensor.last_ingest_status`       | `ok` ou codigo de erro de ingestao   | diagnostic | `ok`                        | Resultado da ultima request recebida pelo webhook, independente do status do provider.                                              |
+| `binary_sensor.webhook_problem`   | `on` quando a ultima ingestao falhou | diagnostic | `off`                       | `device_class: problem`. Use para alertas de webhook quebrado.                                                                      |
+| `sensor.last_webhook_received_at` | timestamp                            | diagnostic | `2026-06-02T15:40:01+00:00` | Data/hora em que o HA recebeu a ultima request.                                                                                     |
+| `sensor.last_source`              | source do ultimo payload valido      | diagnostic | `browser_extension`         | Desabilitado por padrao. Atributos devem incluir `source_version`, `schema_version`, `provider` e `account_key` quando disponiveis. |
+| `sensor.known_accounts`           | numero inteiro                       | diagnostic | `2`                         | Total de contas dinamicas conhecidas pela integracao.                                                                               |
+| `sensor.last_unscoped_error`      | `none` ou codigo de erro             | diagnostic | `not_authenticated`         | Desabilitado por padrao. Usado quando o payload tem erro mas nao tem dados suficientes para identificar a conta.                    |
 
 Exemplo de entidade `sensor.last_ingest_status`:
 
@@ -130,7 +130,7 @@ name: "Last source"
 native_value: browser_extension
 attributes:
   source_version: "0.1.0"
-  schema_version: "1.0"
+  schema_version: "1.1"
   provider: codex
   account_key: "acct_4f8b2d9a5e7c1031"
 ```
@@ -223,16 +223,16 @@ Exemplo de `DeviceInfo` para Ollama Cloud:
 ## Identificacao De Conta
 
 O `account_key` e a chave interna usada para montar `unique_id`,
-`DeviceInfo.identifiers` e o cache de contas conhecidas. Ele deve ser estavel e
-nao deve expor email ou username diretamente.
+`DeviceInfo.identifiers` e o cache de contas conhecidas. Ele deve ser estável e
+não deve expor email ou username diretamente.
 
 Ordem recomendada para resolver a identidade da conta:
 
-| Ordem | Campo | Qualidade | Observacao |
-| --- | --- | --- | --- |
-| 1 | `account_data.account_id` | `stable` | Melhor identificador quando existir. |
-| 2 | `account_data.user_id` | `stable` | Aceitavel quando `account_id` nao existir. |
-| 3 | hash de `provider + email normalizado` | `email_hash` | Fallback aprovado para providers que nao retornam ID de conta, como `ollama_cloud`. Nao usar o email cru no `unique_id`. |
+| Ordem | Campo                                  | Qualidade    | Observacao                                                                                                               |
+|-------|----------------------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------|
+| 1     | `account_data.account_id`              | `stable`     | Melhor identificador quando existir.                                                                                     |
+| 2     | `account_data.user_id`                 | `stable`     | Aceitavel quando `account_id` nao existir.                                                                               |
+| 3     | hash de `provider + email normalizado` | `email_hash` | Fallback aprovado para providers que nao retornam ID de conta, como `ollama_cloud`. Nao usar o email cru no `unique_id`. |
 
 Formato recomendado:
 
@@ -319,18 +319,18 @@ proxima request do webhook.
 Estas entidades devem existir para todo device de conta, independentemente do
 provider.
 
-| Entity key | Plataforma | Estado | Classe | Categoria | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `account` | `sensor` | label da conta | nenhuma | diagnostic | `user@example.com` |
-| `plan` | `sensor` | tipo do plano | enum quando houver opcoes conhecidas | nenhuma | `plus` |
-| `status` | `sensor` | status do payload | enum | nenhuma | `ok` |
-| `problem` | `binary_sensor` | erro ativo | problem | diagnostic | `off` |
-| `last_sample_age` | `sensor` | idade da ultima amostra da conta | duration | `min` | `30` |
-| `last_error` | `sensor` | `none` ou codigo de erro | enum ou nenhuma | diagnostic | `none` |
-| `collected_at` | `sensor` | timestamp da coleta | timestamp | diagnostic | `2026-06-02T15:40:00+00:00` |
-| `last_received_at` | `sensor` | timestamp recebido pelo HA | timestamp | diagnostic | `2026-06-02T15:40:01+00:00` |
-| `source` | `sensor` | source do payload | enum quando houver opcoes conhecidas | diagnostic | `browser_extension` |
-| `request_count` | `sensor` | contador de payloads da conta | total_increasing | diagnostic | `42` |
+| Entity key         | Plataforma      | Estado                           | Classe                               | Categoria  | Exemplo                     |
+|--------------------|-----------------|----------------------------------|--------------------------------------|------------|-----------------------------|
+| `account`          | `sensor`        | label da conta                   | nenhuma                              | diagnostic | `user@example.com`          |
+| `plan`             | `sensor`        | tipo do plano                    | enum quando houver opcoes conhecidas | nenhuma    | `plus`                      |
+| `status`           | `sensor`        | status do payload                | enum                                 | nenhuma    | `ok`                        |
+| `problem`          | `binary_sensor` | erro ativo                       | problem                              | diagnostic | `off`                       |
+| `last_sample_age`  | `sensor`        | idade da ultima amostra da conta | duration                             | `min`      | `30`                        |
+| `last_error`       | `sensor`        | `none` ou codigo de erro         | enum ou nenhuma                      | diagnostic | `none`                      |
+| `collected_at`     | `sensor`        | timestamp da coleta              | timestamp                            | diagnostic | `2026-06-02T15:40:00+00:00` |
+| `last_received_at` | `sensor`        | timestamp recebido pelo HA       | timestamp                            | diagnostic | `2026-06-02T15:40:01+00:00` |
+| `source`           | `sensor`        | source do payload                | enum quando houver opcoes conhecidas | diagnostic | `browser_extension`         |
+| `request_count`    | `sensor`        | contador de payloads da conta    | total_increasing                     | diagnostic | `42`                        |
 
 Estas entidades comuns por conta devem ser desabilitadas por padrao no registro
 de entidades: `last_error`, `collected_at`, `last_received_at`, `source` e
@@ -589,7 +589,7 @@ options:
 native_value: browser_extension
 attributes:
   source_version: "0.1.0"
-  schema_version: "1.0"
+  schema_version: "1.1"
 ```
 
 ### `sensor.request_count`
@@ -618,18 +618,18 @@ O provider `codex` usa `provider_data.rate_limit`.
 
 ### Entidades Especificas
 
-| Entity key | Plataforma | Estado | Classe | Unidade | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `allowed` | `binary_sensor` | uso permitido | nenhuma | nenhuma | `on` |
-| `limit_reached` | `binary_sensor` | limite atingido | problem | nenhuma | `off` |
-| `five_hour_usage_used_percent` | `sensor` | percentual usado do limite de 5 horas | measurement | `%` | `1` |
-| `five_hour_usage_available_percent` | `sensor` | percentual disponivel do limite de 5 horas | measurement | `%` | `99` |
-| `five_hour_usage_reset_at` | `sensor` | reset do limite de 5 horas | timestamp | nenhuma | `2026-06-02T20:26:55+00:00` |
-| `five_hour_usage_reset_after` | `sensor` | horas ate reset na amostra | duration | `h` | `5` |
-| `weekly_usage_used_percent` | `sensor` | percentual usado do limite semanal | measurement | `%` | `18` |
-| `weekly_usage_available_percent` | `sensor` | percentual disponivel do limite semanal | measurement | `%` | `82` |
-| `weekly_usage_reset_at` | `sensor` | reset do limite semanal | timestamp | nenhuma | `2026-06-07T20:50:29+00:00` |
-| `weekly_usage_reset_after` | `sensor` | horas ate reset na amostra | duration | `h` | `119.39` |
+| Entity key                          | Plataforma      | Estado                                     | Classe      | Unidade | Exemplo                     |
+|-------------------------------------|-----------------|--------------------------------------------|-------------|---------|-----------------------------|
+| `allowed`                           | `binary_sensor` | uso permitido                              | nenhuma     | nenhuma | `on`                        |
+| `limit_reached`                     | `binary_sensor` | limite atingido                            | problem     | nenhuma | `off`                       |
+| `five_hour_usage_used_percent`      | `sensor`        | percentual usado do limite de 5 horas      | measurement | `%`     | `1`                         |
+| `five_hour_usage_available_percent` | `sensor`        | percentual disponivel do limite de 5 horas | measurement | `%`     | `99`                        |
+| `five_hour_usage_reset_at`          | `sensor`        | reset do limite de 5 horas                 | timestamp   | nenhuma | `2026-06-02T20:26:55+00:00` |
+| `five_hour_usage_reset_after`       | `sensor`        | horas ate reset na amostra                 | duration    | `h`     | `5`                         |
+| `weekly_usage_used_percent`         | `sensor`        | percentual usado do limite semanal         | measurement | `%`     | `18`                        |
+| `weekly_usage_available_percent`    | `sensor`        | percentual disponivel do limite semanal    | measurement | `%`     | `82`                        |
+| `weekly_usage_reset_at`             | `sensor`        | reset do limite semanal                    | timestamp   | nenhuma | `2026-06-07T20:50:29+00:00` |
+| `weekly_usage_reset_after`          | `sensor`        | horas ate reset na amostra                 | duration    | `h`     | `119.39`                    |
 
 ### `binary_sensor.allowed`
 
@@ -688,9 +688,9 @@ attributes:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.used_percent -> native_value
-provider_data.rate_limit.primary_window.limit_window_seconds -> attribute
-provider_data.rate_limit.primary_window.reset_at -> attribute as UTC ISO 8601
+provider_data.rate_limit.five_hour_window.used_percent -> native_value
+provider_data.rate_limit.five_hour_window.limit_window_seconds -> attribute
+provider_data.rate_limit.five_hour_window.reset_at -> attribute as UTC ISO 8601
 ```
 
 Exemplo:
@@ -717,7 +717,7 @@ attributes:
 Mapeamento:
 
 ```text
-100 - provider_data.rate_limit.primary_window.used_percent -> native_value
+100 - provider_data.rate_limit.five_hour_window.used_percent -> native_value
 ```
 
 Exemplo:
@@ -743,7 +743,7 @@ attributes:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.reset_at -> datetime UTC
+provider_data.rate_limit.five_hour_window.reset_at -> datetime UTC
 ```
 
 `reset_at` do Codex vem em Unix epoch seconds e deve ser convertido para
@@ -769,7 +769,7 @@ attributes:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.reset_after_seconds -> native_value
+provider_data.rate_limit.five_hour_window.reset_after_seconds -> native_value
 ```
 
 O valor do payload esta em segundos, mas o estado da entidade deve ser convertido
@@ -874,14 +874,14 @@ O provider `ollama_cloud` usa `provider_data.session_usage` e
 
 ### Entidades Especificas
 
-| Entity key | Plataforma | Estado | Classe | Unidade | Exemplo |
-| --- | --- | --- | --- | --- | --- |
-| `session_usage_used_percent` | `sensor` | uso da sessao | measurement | `%` | `0` |
-| `session_usage_available_percent` | `sensor` | uso disponivel da sessao | measurement | `%` | `100` |
-| `session_usage_reset_at` | `sensor` | reset da sessao | timestamp | nenhuma | `2026-05-31T19:00:00+00:00` |
-| `weekly_usage_used_percent` | `sensor` | uso semanal | measurement | `%` | `4` |
-| `weekly_usage_available_percent` | `sensor` | uso semanal disponivel | measurement | `%` | `96` |
-| `weekly_usage_reset_at` | `sensor` | reset semanal | timestamp | nenhuma | `2026-06-01T00:00:00+00:00` |
+| Entity key                        | Plataforma | Estado                   | Classe      | Unidade | Exemplo                     |
+|-----------------------------------|------------|--------------------------|-------------|---------|-----------------------------|
+| `session_usage_used_percent`      | `sensor`   | uso da sessao            | measurement | `%`     | `0`                         |
+| `session_usage_available_percent` | `sensor`   | uso disponivel da sessao | measurement | `%`     | `100`                       |
+| `session_usage_reset_at`          | `sensor`   | reset da sessao          | timestamp   | nenhuma | `2026-05-31T19:00:00+00:00` |
+| `weekly_usage_used_percent`       | `sensor`   | uso semanal              | measurement | `%`     | `4`                         |
+| `weekly_usage_available_percent`  | `sensor`   | uso semanal disponivel   | measurement | `%`     | `96`                        |
+| `weekly_usage_reset_at`           | `sensor`   | reset semanal            | timestamp   | nenhuma | `2026-06-01T00:00:00+00:00` |
 
 ### `sensor.session_usage_used_percent`
 
@@ -1037,45 +1037,45 @@ attributes:
 
 ### Envelope Comum
 
-| Payload | Entidade | Estado/Atributo |
-| --- | --- | --- |
-| `schema_version` | `sensor.source` | atributo `schema_version` |
-| `source` | `sensor.source` | estado |
-| `source_version` | `sensor.source` | atributo `source_version` |
-| `collected_at` | `sensor.collected_at` | estado |
-| `provider` | `sensor.account` e atributos comuns | atributo `provider` |
-| `status` | `sensor.status` | estado |
-| `status != "ok"` | `binary_sensor.problem` | `is_on` |
-| `account_data` | `sensor.account` | atributos |
-| `plan_data.type` | `sensor.plan` | estado |
-| `error.code` | `sensor.last_error` | estado |
-| `error.message` | `sensor.last_error` | atributo `message` |
+| Payload          | Entidade                            | Estado/Atributo           |
+|------------------|-------------------------------------|---------------------------|
+| `schema_version` | `sensor.source`                     | atributo `schema_version` |
+| `source`         | `sensor.source`                     | estado                    |
+| `source_version` | `sensor.source`                     | atributo `source_version` |
+| `collected_at`   | `sensor.collected_at`               | estado                    |
+| `provider`       | `sensor.account` e atributos comuns | atributo `provider`       |
+| `status`         | `sensor.status`                     | estado                    |
+| `status != "ok"` | `binary_sensor.problem`             | `is_on`                   |
+| `account_data`   | `sensor.account`                    | atributos                 |
+| `plan_data.type` | `sensor.plan`                       | estado                    |
+| `error.code`     | `sensor.last_error`                 | estado                    |
+| `error.message`  | `sensor.last_error`                 | atributo `message`        |
 
 ### Codex
 
-| Payload | Entidade |
-| --- | --- |
-| `provider_data.rate_limit.allowed` | `binary_sensor.allowed` |
-| `provider_data.rate_limit.limit_reached` | `binary_sensor.limit_reached` |
-| `provider_data.rate_limit.primary_window.used_percent` | `sensor.five_hour_usage_used_percent` |
-| `provider_data.rate_limit.primary_window.used_percent` | `sensor.five_hour_usage_available_percent` |
-| `provider_data.rate_limit.primary_window.reset_at` | `sensor.five_hour_usage_reset_at` |
-| `provider_data.rate_limit.primary_window.reset_after_seconds` | `sensor.five_hour_usage_reset_after` |
-| `provider_data.rate_limit.secondary_window.used_percent` | `sensor.weekly_usage_used_percent` |
-| `provider_data.rate_limit.secondary_window.used_percent` | `sensor.weekly_usage_available_percent` |
-| `provider_data.rate_limit.secondary_window.reset_at` | `sensor.weekly_usage_reset_at` |
-| `provider_data.rate_limit.secondary_window.reset_after_seconds` | `sensor.weekly_usage_reset_after` |
+| Payload                                                         | Entidade                                   |
+|-----------------------------------------------------------------|--------------------------------------------|
+| `provider_data.rate_limit.allowed`                              | `binary_sensor.allowed`                    |
+| `provider_data.rate_limit.limit_reached`                        | `binary_sensor.limit_reached`              |
+| `provider_data.rate_limit.five_hour_window.used_percent`        | `sensor.five_hour_usage_used_percent`      |
+| `provider_data.rate_limit.five_hour_window.used_percent`        | `sensor.five_hour_usage_available_percent` |
+| `provider_data.rate_limit.five_hour_window.reset_at`            | `sensor.five_hour_usage_reset_at`          |
+| `provider_data.rate_limit.five_hour_window.reset_after_seconds` | `sensor.five_hour_usage_reset_after`       |
+| `provider_data.rate_limit.weekly_window.used_percent`           | `sensor.weekly_usage_used_percent`         |
+| `provider_data.rate_limit.weekly_window.used_percent`           | `sensor.weekly_usage_available_percent`    |
+| `provider_data.rate_limit.weekly_window.reset_at`               | `sensor.weekly_usage_reset_at`             |
+| `provider_data.rate_limit.weekly_window.reset_after_seconds`    | `sensor.weekly_usage_reset_after`          |
 
 ### Ollama Cloud
 
-| Payload | Entidade |
-| --- | --- |
-| `provider_data.session_usage.used_percent` | `sensor.session_usage_used_percent` |
+| Payload                                    | Entidade                                 |
+|--------------------------------------------|------------------------------------------|
+| `provider_data.session_usage.used_percent` | `sensor.session_usage_used_percent`      |
 | `provider_data.session_usage.used_percent` | `sensor.session_usage_available_percent` |
-| `provider_data.session_usage.reset_at` | `sensor.session_usage_reset_at` |
-| `provider_data.weekly_usage.used_percent` | `sensor.weekly_usage_used_percent` |
-| `provider_data.weekly_usage.used_percent` | `sensor.weekly_usage_available_percent` |
-| `provider_data.weekly_usage.reset_at` | `sensor.weekly_usage_reset_at` |
+| `provider_data.session_usage.reset_at`     | `sensor.session_usage_reset_at`          |
+| `provider_data.weekly_usage.used_percent`  | `sensor.weekly_usage_used_percent`       |
+| `provider_data.weekly_usage.used_percent`  | `sensor.weekly_usage_available_percent`  |
+| `provider_data.weekly_usage.reset_at`      | `sensor.weekly_usage_reset_at`           |
 
 ## Tratamento De Erros
 

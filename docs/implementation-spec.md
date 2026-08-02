@@ -156,7 +156,7 @@ Atualizar `custom_components/ai_usage/const.py`:
   - `Platform.SENSOR`
   - `Platform.BINARY_SENSOR`
 - Adicionar constantes para:
-  - versao do schema aceito: `1.0`
+  - versao do schema aceito: `1.1`
   - sources conhecidos
   - statuses conhecidos
   - erros de ingestao
@@ -1020,7 +1020,7 @@ Device class:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.used_percent
+provider_data.rate_limit.five_hour_window.used_percent
 ```
 
 Unidade:
@@ -1040,7 +1040,7 @@ Precisao sugerida:
 Mapeamento:
 
 ```text
-100 - provider_data.rate_limit.primary_window.used_percent
+100 - provider_data.rate_limit.five_hour_window.used_percent
 ```
 
 Unidade:
@@ -1060,7 +1060,7 @@ Precisao sugerida:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.reset_at
+provider_data.rate_limit.five_hour_window.reset_at
 ```
 
 Conversao:
@@ -1076,7 +1076,7 @@ Device class:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.primary_window.reset_after_seconds
+provider_data.rate_limit.five_hour_window.reset_after_seconds
 ```
 
 Conversao:
@@ -1096,7 +1096,7 @@ Device class:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.secondary_window.used_percent
+provider_data.rate_limit.weekly_window.used_percent
 ```
 
 Unidade:
@@ -1116,7 +1116,7 @@ Precisao sugerida:
 Mapeamento:
 
 ```text
-100 - provider_data.rate_limit.secondary_window.used_percent
+100 - provider_data.rate_limit.weekly_window.used_percent
 ```
 
 Unidade:
@@ -1136,7 +1136,7 @@ Precisao sugerida:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.secondary_window.reset_at
+provider_data.rate_limit.weekly_window.reset_at
 ```
 
 Conversao:
@@ -1152,7 +1152,7 @@ Device class:
 Mapeamento:
 
 ```text
-provider_data.rate_limit.secondary_window.reset_after_seconds
+provider_data.rate_limit.weekly_window.reset_after_seconds
 ```
 
 Conversao:
@@ -1334,7 +1334,7 @@ Responsabilidades:
 
 - Validar `provider_data.rate_limit`.
 - Validar campos booleanos `allowed` e `limit_reached`.
-- Validar janelas `primary_window` e `secondary_window`.
+- Validar janelas `five_hour_window` e `weekly_window`; cada uma pode ser `null` quando nao estiver disponivel.
 - Validar percentuais numericos.
 - Validar `reset_at` como Unix epoch seconds.
 - Validar `reset_after_seconds` como numero.

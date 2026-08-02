@@ -60,7 +60,7 @@ def test_binary_sensor_helpers_handle_valid_and_invalid_values() -> None:
     assert _codex_rate_limit_bool(state, "allowed") is True
     assert _codex_rate_limit_bool(state, "missing") is None
     assert _codex_window_number(state, "rate_limit", "used") is None
-    assert _codex_window_number(state, "primary_window", "used") is None
+    assert _codex_window_number(state, "five_hour_window", "used") is None
     assert _drop_none({"a": 1, "b": None}) == {"a": 1}
 
 

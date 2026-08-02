@@ -264,10 +264,10 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: _codex_window_number(
             state,
-            "primary_window",
+            "five_hour_window",
             "used_percent",
         ),
-        attributes_fn=lambda state: _codex_used_attributes(state, "primary_window"),
+        attributes_fn=lambda state: _codex_used_attributes(state, "five_hour_window"),
     ),
     AIUsageAccountSensorDescription(
         key="five_hour_usage_available_percent",
@@ -279,13 +279,13 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         value_fn=lambda state: _available_percent(
             _codex_window_number(
                 state,
-                "primary_window",
+                "five_hour_window",
                 "used_percent",
             )
         ),
         attributes_fn=lambda state: _codex_available_attributes(
             state,
-            "primary_window",
+            "five_hour_window",
         ),
     ),
     AIUsageAccountSensorDescription(
@@ -295,19 +295,19 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda state: _codex_window_datetime(
             state,
-            "primary_window",
+            "five_hour_window",
             "reset_at",
         ),
         attributes_fn=lambda state: _drop_none(
             {
                 "raw_reset_at": _codex_window_number(
                     state,
-                    "primary_window",
+                    "five_hour_window",
                     "reset_at",
                 ),
                 "reset_after_seconds": _codex_window_number(
                     state,
-                    "primary_window",
+                    "five_hour_window",
                     "reset_after_seconds",
                 ),
             }
@@ -322,17 +322,17 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=lambda state: _codex_window_hours(
             state,
-            "primary_window",
+            "five_hour_window",
             "reset_after_seconds",
         ),
         attributes_fn=lambda state: _drop_none(
             {
                 "reset_at": _iso(
-                    _codex_window_datetime(state, "primary_window", "reset_at")
+                    _codex_window_datetime(state, "five_hour_window", "reset_at")
                 ),
                 "reset_after_seconds": _codex_window_number(
                     state,
-                    "primary_window",
+                    "five_hour_window",
                     "reset_after_seconds",
                 ),
             }
@@ -347,10 +347,10 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         suggested_display_precision=0,
         value_fn=lambda state: _codex_window_number(
             state,
-            "secondary_window",
+            "weekly_window",
             "used_percent",
         ),
-        attributes_fn=lambda state: _codex_used_attributes(state, "secondary_window"),
+        attributes_fn=lambda state: _codex_used_attributes(state, "weekly_window"),
     ),
     AIUsageAccountSensorDescription(
         key="weekly_usage_available_percent",
@@ -362,13 +362,13 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         value_fn=lambda state: _available_percent(
             _codex_window_number(
                 state,
-                "secondary_window",
+                "weekly_window",
                 "used_percent",
             )
         ),
         attributes_fn=lambda state: _codex_available_attributes(
             state,
-            "secondary_window",
+            "weekly_window",
         ),
     ),
     AIUsageAccountSensorDescription(
@@ -378,19 +378,19 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         value_fn=lambda state: _codex_window_datetime(
             state,
-            "secondary_window",
+            "weekly_window",
             "reset_at",
         ),
         attributes_fn=lambda state: _drop_none(
             {
                 "raw_reset_at": _codex_window_number(
                     state,
-                    "secondary_window",
+                    "weekly_window",
                     "reset_at",
                 ),
                 "reset_after_seconds": _codex_window_number(
                     state,
-                    "secondary_window",
+                    "weekly_window",
                     "reset_after_seconds",
                 ),
             }
@@ -405,17 +405,17 @@ CODEX_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] = (
         suggested_display_precision=2,
         value_fn=lambda state: _codex_window_hours(
             state,
-            "secondary_window",
+            "weekly_window",
             "reset_after_seconds",
         ),
         attributes_fn=lambda state: _drop_none(
             {
                 "reset_at": _iso(
-                    _codex_window_datetime(state, "secondary_window", "reset_at")
+                    _codex_window_datetime(state, "weekly_window", "reset_at")
                 ),
                 "reset_after_seconds": _codex_window_number(
                     state,
-                    "secondary_window",
+                    "weekly_window",
                     "reset_after_seconds",
                 ),
             }
@@ -809,7 +809,7 @@ def _account_attributes(state: AccountState) -> dict[str, Any]:
 
 def _codex_used_attributes(state: AccountState, window_key: str) -> dict[str, Any]:
     """Return attributes for Codex used-percent sensors."""
-    window_label = "five_hour" if window_key == "primary_window" else "weekly"
+    window_label = "five_hour" if window_key == "five_hour_window" else "weekly"
     return _drop_none(
         {
             "window": window_label,
@@ -833,7 +833,7 @@ def _codex_available_attributes(
     window_key: str,
 ) -> dict[str, Any]:
     """Return attributes for Codex available-percent sensors."""
-    window_label = "five_hour" if window_key == "primary_window" else "weekly"
+    window_label = "five_hour" if window_key == "five_hour_window" else "weekly"
     return _drop_none(
         {
             "window": window_label,

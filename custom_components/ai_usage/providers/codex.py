@@ -41,7 +41,15 @@ class CodexPayloadHandler(ProviderPayloadHandler):
         require_bool(rate_limit, "allowed", path="provider_data.rate_limit")
         require_bool(rate_limit, "limit_reached", path="provider_data.rate_limit")
 
-        for window_key in ("primary_window", "secondary_window"):
+        for window_key in ("five_hour_window", "weekly_window"):
+            if window_key not in rate_limit:
+                require_mapping(
+                    rate_limit,
+                    window_key,
+                    path="provider_data.rate_limit",
+                )
+            if rate_limit[window_key] is None:
+                continue
             window = require_mapping(
                 rate_limit,
                 window_key,
