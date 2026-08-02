@@ -58,10 +58,13 @@ It is designed for simple dashboard questions:
 - Did a collector stop sending data?
 - How many AI accounts does Home Assistant know about?
 
-The integration currently supports data from:
+The integration currently supports data from [`Codex`, `Ollama Cloud`]:
 
-- Codex
-- Ollama Cloud
+<p>
+   <img src="docs/images/openai.png" alt="OpenAI" width="120">
+   <img src="docs/images/ollama.png" alt="Ollama" width="120">
+</p>
+
 
 ## How It Works
 
@@ -72,9 +75,7 @@ An external collector sends data to a Home Assistant webhook. The integration
 validates that data, identifies the account, and updates sensors that you can use
 in dashboards, automations, and alerts.
 
-```text
-External collector -> Home Assistant webhook -> AI Usage -> Sensors
-```
+![flow.png](docs/images/flow.png)
 
 This makes it possible to use different sources in the future, such as browser
 extensions, local scripts, or other small collectors. If you want a ready-made
