@@ -23,6 +23,9 @@
   <img alt="Providers" src="https://img.shields.io/badge/Providers-Codex%20%7C%20Ollama%20Cloud-7C3AED?style=flat-square">
 </p>
 
+See the [Home Assistant compatibility matrix](docs/compatibility.md) for the
+tested integration and Home Assistant version combinations.
+
 <p align="center">
   <a href="https://sonar.alves-dev.com/dashboard?id=ai-usage">
     <img alt="Quality Gate Status" src="https://sonar.alves-dev.com/api/project_badges/measure?project=ai-usage&metric=alert_status&token=sqb_ebd6127a5ab8462ca0c48146a5f8ca2c10b90bb4">
@@ -55,10 +58,13 @@ It is designed for simple dashboard questions:
 - Did a collector stop sending data?
 - How many AI accounts does Home Assistant know about?
 
-The integration currently supports data from:
+The integration currently supports data from [`Codex`, `Ollama Cloud`]:
 
-- Codex
-- Ollama Cloud
+<p>
+   <img src="docs/images/openai.png" alt="OpenAI" width="120">
+   <img src="docs/images/ollama.png" alt="Ollama" width="120">
+</p>
+
 
 ## How It Works
 
@@ -69,9 +75,7 @@ An external collector sends data to a Home Assistant webhook. The integration
 validates that data, identifies the account, and updates sensors that you can use
 in dashboards, automations, and alerts.
 
-```text
-External collector -> Home Assistant webhook -> AI Usage -> Sensors
-```
+![flow.png](docs/images/flow.png)
 
 This makes it possible to use different sources in the future, such as browser
 extensions, local scripts, or other small collectors. If you want a ready-made

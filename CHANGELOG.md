@@ -5,13 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.3] - 2026-08-01
+---
+## [0.0.3] - 2026-08-02
+
+### Changed
+
+- Updated the Codex payload contract to schema `1.1`.
+- Replaced the ambiguous `primary_window` and `secondary_window` fields with
+  semantic `five_hour_window` and `weekly_window` fields.
+- Allowed either Codex usage window to be `null` when the provider does not
+  report it; the integration no longer copies one window into the other.
+- This is a breaking contract change. Collectors must send schema `1.1`; the
+  integration does not support the previous window field names.
 
 ### Added
 
 - Added an example Home Assistant Lovelace custom card for displaying two AI
   usage windows with available percentage and reset timestamps.
 
+---
 ## [0.0.2] - 2026-06-06
 
 ### Added
@@ -32,6 +44,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Documented the beta status before `v1.0.0` and clarified entity contract
   stability expectations.
 
+---
 ## [0.0.1] - 2026-06-03
 
 ### Added

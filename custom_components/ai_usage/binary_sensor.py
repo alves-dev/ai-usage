@@ -106,25 +106,25 @@ CODEX_BINARY_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountBinarySensorDescription, .
                 "limit_reached": _codex_rate_limit_bool(state, "limit_reached"),
                 "five_hour_usage_used_percent": _codex_window_number(
                     state,
-                    "primary_window",
+                    "five_hour_window",
                     "used_percent",
                 ),
                 "five_hour_usage_available_percent": _available_percent(
                     _codex_window_number(
                         state,
-                        "primary_window",
+                        "five_hour_window",
                         "used_percent",
                     )
                 ),
                 "weekly_usage_used_percent": _codex_window_number(
                     state,
-                    "secondary_window",
+                    "weekly_window",
                     "used_percent",
                 ),
                 "weekly_usage_available_percent": _available_percent(
                     _codex_window_number(
                         state,
-                        "secondary_window",
+                        "weekly_window",
                         "used_percent",
                     )
                 ),

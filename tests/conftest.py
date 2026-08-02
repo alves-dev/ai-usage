@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 def codex_payload() -> dict[str, Any]:
     """Return a valid Codex payload."""
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "source": "manual_test",
         "source_version": "0.1.0",
         "collected_at": "2026-06-03T18:30:00.000Z",
@@ -34,13 +34,13 @@ def codex_payload() -> dict[str, Any]:
             "rate_limit": {
                 "allowed": True,
                 "limit_reached": False,
-                "primary_window": {
+                "five_hour_window": {
                     "used_percent": 12.5,
                     "limit_window_seconds": 18000,
                     "reset_after_seconds": 14400,
                     "reset_at": 1780434415,
                 },
-                "secondary_window": {
+                "weekly_window": {
                     "used_percent": 37.2,
                     "limit_window_seconds": 604800,
                     "reset_after_seconds": 428946,
@@ -56,7 +56,7 @@ def codex_payload() -> dict[str, Any]:
 def ollama_payload() -> dict[str, Any]:
     """Return a valid Ollama Cloud payload."""
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "source": "manual_test",
         "source_version": "0.1.0",
         "collected_at": "2026-06-03T18:30:00.000Z",
@@ -87,7 +87,7 @@ def ollama_payload() -> dict[str, Any]:
 def error_payload() -> dict[str, Any]:
     """Return a valid provider error payload without account identity."""
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "source": "manual_test",
         "source_version": "0.1.0",
         "collected_at": "2026-06-03T18:30:00.000Z",

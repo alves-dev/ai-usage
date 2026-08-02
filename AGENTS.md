@@ -47,9 +47,13 @@ Tests use `pytest` with `pytest-asyncio` in auto mode. Name test files
 Use shared payload fixtures from `tests/conftest.py` and clone mutable payloads
 before modifying them in a test.
 
-Add or update tests for validation rules, provider payload handling, identity
-behavior, and ingestion state changes. Run `uv run pytest` before opening a pull
-request.
+Every code change must include new or updated tests when behavior, validation
+rules, provider payload handling, identity behavior, ingestion state, entities,
+or integrations are affected. Maintain at least 80% total test coverage for
+`custom_components/ai_usage`; generate it with
+`uv run pytest --cov=custom_components/ai_usage --cov-report=term-missing`
+and do not reduce coverage below this threshold. Run `uv run pytest` and
+`uv run ruff check .` before opening a pull request.
 
 ## Commit & Pull Request Guidelines
 
