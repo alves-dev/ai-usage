@@ -73,6 +73,7 @@ def _account_from_storage_item(item: object) -> AccountState | None:
     account_label = _string_or_none(item.get("account_label"))
     account_data = item.get("account_data")
     plan_data = item.get("plan_data")
+    usage_data = item.get("usage_data")
 
     state = AccountState(
         provider=provider,
@@ -81,6 +82,7 @@ def _account_from_storage_item(item: object) -> AccountState | None:
         account_label=account_label or account_key,
         account_data=dict(account_data) if isinstance(account_data, Mapping) else {},
         plan_data=dict(plan_data) if isinstance(plan_data, Mapping) else {},
+        usage_data=dict(usage_data) if isinstance(usage_data, Mapping) else {},
         request_count=_int_or_zero(item.get("request_count")),
     )
 
@@ -107,6 +109,6 @@ def _int_or_zero(value: object) -> int:
         return 0
     try:
         number = int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0
     return max(number, 0)

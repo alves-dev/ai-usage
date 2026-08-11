@@ -33,9 +33,10 @@ class PayloadEnvelope:
     collected_at: datetime
     provider: str
     status: str
+    collector_data: dict[str, Any]
     account_data: dict[str, Any]
     plan_data: dict[str, Any]
-    provider_data: dict[str, Any]
+    usage_data: dict[str, Any]
     error: ProviderError | None
 
 
@@ -73,7 +74,7 @@ class AccountState:
     account_label: str
     account_data: dict[str, Any] = field(default_factory=dict)
     plan_data: dict[str, Any] = field(default_factory=dict)
-    provider_data: dict[str, Any] = field(default_factory=dict)
+    usage_data: dict[str, Any] = field(default_factory=dict)
     status: str | None = None
     error: ProviderError | None = None
     source: str | None = None
@@ -104,7 +105,7 @@ class AccountState:
         self.account_label = identity.label
         self.account_data = dict(envelope.account_data)
         self.plan_data = dict(envelope.plan_data)
-        self.provider_data = dict(envelope.provider_data)
+        self.usage_data = dict(envelope.usage_data)
         self.status = envelope.status
         self.error = envelope.error
         self.source = envelope.source
@@ -123,6 +124,7 @@ class AccountState:
             "account_label": self.account_label,
             "account_data": dict(self.account_data),
             "plan_data": dict(self.plan_data),
+            "usage_data": dict(self.usage_data),
             "provider_name": PROVIDER_NAMES.get(self.provider, self.provider),
             "request_count": self.request_count,
         }

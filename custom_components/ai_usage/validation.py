@@ -11,14 +11,13 @@ from .const import (
     INGEST_STATUS_MISSING_PROVIDER,
     INGEST_STATUS_PAYLOAD_MUST_BE_OBJECT,
     INGEST_STATUS_UNSUPPORTED_PROVIDER,
-    KNOWN_SOURCES,
+    KNOWN_COLLECTORS,
     PAYLOAD_SCHEMA_VERSION,
     PROVIDER_STATUS_OK,
     PROVIDER_STATUSES,
     SUPPORTED_PROVIDERS,
 )
 from .models import PayloadEnvelope, ProviderError
-from .providers import PROVIDER_HANDLERS, ProviderContractError
 from .providers.base import parse_datetime
 
 
@@ -58,15 +57,25 @@ def validate_payload(payload: object) -> PayloadEnvelope:
             provider=provider,
         )
 
-    source = _required_string(payload, "source", provider=provider)
-    if source not in KNOWN_SOURCES:
+    collector_data = _required_dict(payload, "collector_data", provider=provider)
+    collector_id = _required_string(
+        collector_data,
+        "id",
+        provider=provider,
+        path="collector_data",
+    )
+    if collector_id not in KNOWN_COLLECTORS:
         raise PayloadValidationError(
             INGEST_STATUS_INVALID_CONTRACT,
-            "source is not supported",
+            "collector_data.id is not supported",
             provider=provider,
         )
-
-    source_version = _required_string(payload, "source_version", provider=provider)
+    collector_version = _required_string(
+        collector_data,
+        "version",
+        provider=provider,
+        path="collector_data",
+    )
     collected_at_raw = _required_string(payload, "collected_at", provider=provider)
     try:
         collected_at = parse_datetime(collected_at_raw)
@@ -86,30 +95,36 @@ def validate_payload(payload: object) -> PayloadEnvelope:
         )
 
     account_data = _required_dict(payload, "account_data", provider=provider)
-    plan_data = _required_dict(payload, "plan_data", provider=provider)
-    provider_data = _required_dict(payload, "provider_data", provider=provider)
-    error = _validate_error(payload.get("error"), status, provider=provider)
-
-    handler = PROVIDER_HANDLERS[provider]
-    try:
-        handler.validate_provider_data(provider_data, status=status)
-    except ProviderContractError as err:
+    plan_data = account_data.get("plan", {})
+    if not isinstance(plan_data, Mapping):
         raise PayloadValidationError(
             INGEST_STATUS_INVALID_CONTRACT,
-            str(err),
+            "account_data.plan must be an object",
             provider=provider,
-        ) from err
+        )
+    usage_data = _required_dict(payload, "usage_data", provider=provider)
+    _validate_usage_data(usage_data, status=status, provider=provider)
+    if status == PROVIDER_STATUS_OK:
+        account_id = account_data.get("id")
+        if not isinstance(account_id, str) or not account_id.strip():
+            raise PayloadValidationError(
+                INGEST_STATUS_INVALID_CONTRACT,
+                "account_data.id must be a non-empty string",
+                provider=provider,
+            )
+    error = _validate_error(payload.get("error"), status, provider=provider)
 
     return PayloadEnvelope(
         schema_version=schema_version,
-        source=source,
-        source_version=source_version,
+        source=collector_id,
+        source_version=collector_version,
         collected_at=collected_at,
         provider=provider,
         status=status,
+        collector_data=collector_data,
         account_data=account_data,
-        plan_data=plan_data,
-        provider_data=provider_data,
+        plan_data=dict(plan_data),
+        usage_data=usage_data,
         error=error,
     )
 
@@ -138,16 +153,147 @@ def _required_string(
     key: str,
     *,
     provider: str,
+    path: str | None = None,
 ) -> str:
     """Return a required non-empty string field."""
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
         raise PayloadValidationError(
             INGEST_STATUS_INVALID_CONTRACT,
-            f"{key} must be a non-empty string",
+            f"{path or key}.{key} must be a non-empty string"
+            if path
+            else f"{key} must be a non-empty string",
             provider=provider,
         )
     return value.strip()
+
+
+def _validate_usage_data(
+    usage_data: Mapping[str, Any],
+    *,
+    status: str,
+    provider: str,
+) -> None:
+    """Validate the common window usage contract."""
+    windows = usage_data.get("windows")
+    if not isinstance(windows, list):
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            "usage_data.windows must be an array",
+            provider=provider,
+        )
+    if status != PROVIDER_STATUS_OK and not windows:
+        return
+    if not windows:
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            "usage_data.windows must not be empty",
+            provider=provider,
+        )
+    seen_ids: set[str] = set()
+    for index, raw_window in enumerate(windows):
+        path = f"usage_data.windows[{index}]"
+        if not isinstance(raw_window, Mapping):
+            raise PayloadValidationError(
+                INGEST_STATUS_INVALID_CONTRACT,
+                f"{path} must be an object",
+                provider=provider,
+            )
+        window = dict(raw_window)
+        window_id = _window_string(window, "id", path, provider)
+        if window_id in seen_ids:
+            raise PayloadValidationError(
+                INGEST_STATUS_INVALID_CONTRACT,
+                f"{path}.id must be unique",
+                provider=provider,
+            )
+        seen_ids.add(window_id)
+        _window_string(window, "label", path, provider)
+        _window_number(window, "duration_seconds", path, provider, minimum=1)
+        _window_number(window, "used_percent", path, provider, maximum=100)
+        _window_datetime(window, "reset_at", path, provider)
+        limit_reached = window.get("limit_reached")
+        if not isinstance(limit_reached, bool):
+            raise PayloadValidationError(
+                INGEST_STATUS_INVALID_CONTRACT,
+                f"{path}.limit_reached must be a boolean",
+                provider=provider,
+            )
+        if "reset_after_seconds" in window:
+            _window_number(
+                window,
+                "reset_after_seconds",
+                path,
+                provider,
+                minimum=0,
+            )
+
+
+def _window_string(
+    window: Mapping[str, Any], key: str, path: str, provider: str
+) -> str:
+    """Validate and return a required window string."""
+    value = window.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be a non-empty string",
+            provider=provider,
+        )
+    return value.strip()
+
+
+def _window_number(
+    window: Mapping[str, Any],
+    key: str,
+    path: str,
+    provider: str,
+    *,
+    minimum: float | None = None,
+    maximum: float | None = None,
+) -> int | float:
+    """Validate a numeric window field."""
+    value = window.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be numeric",
+            provider=provider,
+        )
+    if minimum is not None and value < minimum:
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be >= {minimum:g}",
+            provider=provider,
+        )
+    if maximum is not None and value > maximum:
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be <= {maximum:g}",
+            provider=provider,
+        )
+    return value
+
+
+def _window_datetime(
+    window: Mapping[str, Any], key: str, path: str, provider: str
+) -> None:
+    """Validate a window ISO datetime field."""
+    value = window.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be an ISO 8601 string",
+            provider=provider,
+        )
+    try:
+        parse_datetime(value)
+    except ValueError as err:
+        raise PayloadValidationError(
+            INGEST_STATUS_INVALID_CONTRACT,
+            f"{path}.{key} must be an ISO 8601 datetime",
+            provider=provider,
+        ) from err
 
 
 def _required_dict(

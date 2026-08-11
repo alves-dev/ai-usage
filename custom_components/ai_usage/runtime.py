@@ -17,6 +17,7 @@ from .const import (
     EVENT_WEBHOOK_RECEIVED,
     INGEST_STATUS_INVALID_JSON,
     INGEST_STATUS_OK,
+    UNKNOWN_PROVIDER_CONFIGURATION_URL,
     account_update_signal,
     accounts_changed_signal,
     integration_update_signal,
@@ -84,7 +85,16 @@ class AIUsageRuntime:
 
     def get_provider_metadata(self, provider: str) -> ProviderMetadata:
         """Return display metadata for a provider."""
-        return PROVIDER_HANDLERS[provider].metadata
+        handler = PROVIDER_HANDLERS.get(provider)
+        if handler is not None:
+            return handler.metadata
+        return ProviderMetadata(
+            provider=provider,
+            provider_name="Unknown provider",
+            manufacturer="AI provider",
+            model="AI usage account",
+            configuration_url=UNKNOWN_PROVIDER_CONFIGURATION_URL,
+        )
 
     def get_provider_entity_picture(self, provider: str) -> str | None:
         """Return the local provider image URL if the file is registered."""
@@ -98,7 +108,8 @@ class AIUsageRuntime:
         self._account_sensor_callbacks.append(callback)
 
         def _remove() -> None:
-            self._account_sensor_callbacks.remove(callback)
+            if callback in self._account_sensor_callbacks:
+                self._account_sensor_callbacks.remove(callback)
 
         return _remove
 
@@ -110,7 +121,8 @@ class AIUsageRuntime:
         self._account_binary_sensor_callbacks.append(callback)
 
         def _remove() -> None:
-            self._account_binary_sensor_callbacks.remove(callback)
+            if callback in self._account_binary_sensor_callbacks:
+                self._account_binary_sensor_callbacks.remove(callback)
 
         return _remove
 

@@ -55,6 +55,25 @@ def test_runtime_account_callbacks_and_metadata() -> None:
     assert _metadata_compare(account) == {"provider": "codex", "account_label": "Test"}
 
 
+def test_runtime_callback_removers_are_idempotent() -> None:
+    """Repeated unload callbacks must not raise when HA unloads twice."""
+    runtime = _runtime_instance(_hass())
+    sensor_remove = runtime.async_register_account_sensor_callback(
+        lambda _account: None
+    )
+    binary_remove = runtime.async_register_account_binary_sensor_callback(
+        lambda _account: None
+    )
+
+    sensor_remove()
+    sensor_remove()
+    binary_remove()
+    binary_remove()
+
+    assert runtime._account_sensor_callbacks == []
+    assert runtime._account_binary_sensor_callbacks == []
+
+
 async def test_runtime_setup_loads_accounts_and_registers_images() -> None:
     """Runtime setup should load persisted accounts before platform setup."""
     hass = _hass()
@@ -75,6 +94,13 @@ async def test_runtime_setup_loads_accounts_and_registers_images() -> None:
     assert runtime.account_states == (account,)
     assert runtime.integration_state.known_accounts == 1
     assert runtime.integration_state.known_accounts_by_provider == {"codex": 1}
+
+
+def test_unknown_provider_has_configuration_url() -> None:
+    """Unknown provider metadata points users to the integration repository."""
+    runtime = _runtime_instance(_hass())
+    metadata = runtime.get_provider_metadata("unknown")
+    assert metadata.configuration_url == "https://github.com/alves-dev/ai-usage"
 
 
 async def test_runtime_apply_sample_notifies_and_saves(codex_payload: dict) -> None:

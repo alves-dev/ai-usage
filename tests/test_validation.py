@@ -19,7 +19,7 @@ from custom_components.ai_usage.validation import (
     validate_payload,
 )
 
-OLLAMA_WEEKLY_USED_PERCENT = 44.4
+EXPECTED_WINDOW_COUNT = 2
 
 
 def _assert_validation_error(
@@ -29,41 +29,33 @@ def _assert_validation_error(
 ) -> None:
     with pytest.raises(PayloadValidationError) as exc_info:
         validate_payload(payload)
-
     assert exc_info.value.ingest_status == ingest_status
     assert exc_info.value.http_status == HTTPStatus.BAD_REQUEST
     assert message_fragment in exc_info.value.message
 
 
 def test_valid_codex_payload(codex_payload: dict[str, Any]) -> None:
-    """A valid Codex payload should produce a payload envelope."""
+    """A valid normalized payload should produce an envelope."""
     envelope = validate_payload(codex_payload)
-
     assert envelope.provider == "codex"
-    assert envelope.status == "ok"
-    assert envelope.error is None
-    assert envelope.account_data["account_id"] == "acct-manual-codex"
-    assert envelope.collected_at.isoformat() == "2026-06-03T18:30:00+00:00"
+    assert envelope.source == "manual_test"
+    assert envelope.source_version == "1.0.0"
+    assert envelope.account_data["id"] == "acct-manual-codex"
+    assert len(envelope.usage_data["windows"]) == EXPECTED_WINDOW_COUNT
 
 
-def test_valid_ollama_payload(ollama_payload: dict[str, Any]) -> None:
-    """A valid Ollama Cloud payload should produce a payload envelope."""
-    envelope = validate_payload(ollama_payload)
-
-    assert envelope.provider == "ollama_cloud"
-    assert envelope.status == "ok"
-    assert (
-        envelope.provider_data["weekly_usage"]["used_percent"]
-        == OLLAMA_WEEKLY_USED_PERCENT
-    )
+def test_valid_unknown_provider(codex_payload: dict[str, Any]) -> None:
+    """Unknown providers are accepted when the common contract is valid."""
+    payload = clone_payload(codex_payload)
+    payload["provider"] = "unknown"
+    envelope = validate_payload(payload)
+    assert envelope.provider == "unknown"
 
 
 def test_payload_must_be_object() -> None:
     """Payload must be a JSON object."""
     _assert_validation_error(
-        [],
-        INGEST_STATUS_PAYLOAD_MUST_BE_OBJECT,
-        "payload must be an object",
+        [], INGEST_STATUS_PAYLOAD_MUST_BE_OBJECT, "payload must be an object"
     )
 
 
@@ -71,46 +63,27 @@ def test_missing_provider(codex_payload: dict[str, Any]) -> None:
     """provider is required."""
     payload = clone_payload(codex_payload)
     payload.pop("provider")
-
     _assert_validation_error(
-        payload,
-        INGEST_STATUS_MISSING_PROVIDER,
-        "provider must be a non-empty string",
-    )
-
-
-def test_provider_must_be_string(codex_payload: dict[str, Any]) -> None:
-    """provider must be a string."""
-    payload = clone_payload(codex_payload)
-    payload["provider"] = 42
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_MISSING_PROVIDER,
-        "provider must be a non-empty string",
+        payload, INGEST_STATUS_MISSING_PROVIDER, "provider must be a non-empty string"
     )
 
 
 def test_unsupported_provider(codex_payload: dict[str, Any]) -> None:
-    """Unsupported providers should be rejected."""
+    """Unknown arbitrary provider IDs are rejected."""
     payload = clone_payload(codex_payload)
-    payload["provider"] = "unknown"
-
+    payload["provider"] = "not_a_supported_provider"
     _assert_validation_error(
-        payload,
-        INGEST_STATUS_UNSUPPORTED_PROVIDER,
-        "provider is not supported",
+        payload, INGEST_STATUS_UNSUPPORTED_PROVIDER, "provider is not supported"
     )
 
 
 @pytest.mark.parametrize(
     ("field", "value", "message"),
     [
-        ("schema_version", "2.0", "schema_version must be 1.1"),
-        ("source", "unknown_source", "source is not supported"),
+        ("schema_version", "1.1", "schema_version must be 2.0"),
+        ("collector_data", [], "collector_data must be an object"),
         ("account_data", [], "account_data must be an object"),
-        ("plan_data", [], "plan_data must be an object"),
-        ("provider_data", [], "provider_data must be an object"),
+        ("usage_data", [], "usage_data must be an object"),
     ],
 )
 def test_invalid_envelope_fields(
@@ -122,92 +95,82 @@ def test_invalid_envelope_fields(
     """Envelope field validation should return invalid_contract."""
     payload = clone_payload(codex_payload)
     payload[field] = value
-
     _assert_validation_error(payload, INGEST_STATUS_INVALID_CONTRACT, message)
+
+
+def test_collector_id_must_be_known(codex_payload: dict[str, Any]) -> None:
+    """Collectors are explicit and validated independently of providers."""
+    payload = clone_payload(codex_payload)
+    payload["collector_data"]["id"] = "unknown_collector"
+    _assert_validation_error(
+        payload,
+        INGEST_STATUS_INVALID_CONTRACT,
+        "collector_data.id is not supported",
+    )
+
+
+def test_account_id_is_required_for_success(codex_payload: dict[str, Any]) -> None:
+    """Successful samples require an explicit stable account ID."""
+    payload = clone_payload(codex_payload)
+    payload["account_data"].pop("id")
+    _assert_validation_error(
+        payload,
+        INGEST_STATUS_INVALID_CONTRACT,
+        "account_data.id must be a non-empty string",
+    )
+
+
+def test_used_percent_must_be_valid(codex_payload: dict[str, Any]) -> None:
+    """Window percentages must be between zero and one hundred."""
+    payload = clone_payload(codex_payload)
+    payload["usage_data"]["windows"][0]["used_percent"] = 101
+    _assert_validation_error(
+        payload, INGEST_STATUS_INVALID_CONTRACT, "used_percent must be <= 100"
+    )
+
+
+def test_window_label_is_required(codex_payload: dict[str, Any]) -> None:
+    """Every window must have a presentation label."""
+    payload = clone_payload(codex_payload)
+    payload["usage_data"]["windows"][0].pop("label")
+    _assert_validation_error(
+        payload,
+        INGEST_STATUS_INVALID_CONTRACT,
+        "label must be a non-empty string",
+    )
+
+
+def test_duplicate_window_ids_are_rejected(codex_payload: dict[str, Any]) -> None:
+    """Window IDs must be unique within one sample."""
+    payload = clone_payload(codex_payload)
+    payload["usage_data"]["windows"][1]["id"] = "short"
+    _assert_validation_error(
+        payload, INGEST_STATUS_INVALID_CONTRACT, "id must be unique"
+    )
+
+
+def test_reset_at_must_be_iso_datetime(codex_payload: dict[str, Any]) -> None:
+    """Window reset timestamps use ISO 8601."""
+    payload = clone_payload(codex_payload)
+    payload["usage_data"]["windows"][0]["reset_at"] = "not-a-date"
+    _assert_validation_error(
+        payload,
+        INGEST_STATUS_INVALID_CONTRACT,
+        "reset_at must be an ISO 8601 datetime",
+    )
 
 
 def test_status_ok_rejects_error(codex_payload: dict[str, Any]) -> None:
     """Successful payloads must not include error."""
     payload = clone_payload(codex_payload)
     payload["error"] = {"code": "unexpected", "message": "Unexpected"}
-
     _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "error must be null",
+        payload, INGEST_STATUS_INVALID_CONTRACT, "error must be null"
     )
 
 
-def test_error_status_requires_error(codex_payload: dict[str, Any]) -> None:
-    """Error payloads must include structured error."""
-    payload = clone_payload(codex_payload)
-    payload["status"] = "rate_limited"
-    payload["error"] = None
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "error must be an object",
-    )
-
-
-def test_codex_requires_rate_limit(codex_payload: dict[str, Any]) -> None:
-    """Codex success payloads must include rate_limit."""
-    payload = clone_payload(codex_payload)
-    payload["provider_data"] = {}
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "provider_data.rate_limit must be an object",
-    )
-
-
-def test_codex_rejects_invalid_percent(codex_payload: dict[str, Any]) -> None:
-    """Codex percentages must be within 0-100."""
-    payload = clone_payload(codex_payload)
-    payload["provider_data"]["rate_limit"]["five_hour_window"]["used_percent"] = 101
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "used_percent must be <= 100",
-    )
-
-
-def test_codex_accepts_missing_five_hour_window(
-    codex_payload: dict[str, Any],
-) -> None:
-    """Codex may report an unavailable five-hour window as null."""
-    payload = clone_payload(codex_payload)
-    payload["provider_data"]["rate_limit"]["five_hour_window"] = None
-
-    envelope = validate_payload(payload)
-
-    assert envelope.provider_data["rate_limit"]["five_hour_window"] is None
-
-
-def test_codex_rejects_legacy_window_names(codex_payload: dict[str, Any]) -> None:
-    """The semantic window contract must reject legacy provider field names."""
-    payload = clone_payload(codex_payload)
-    rate_limit = payload["provider_data"]["rate_limit"]
-    rate_limit["primary_window"] = rate_limit.pop("five_hour_window")
-    rate_limit["secondary_window"] = rate_limit.pop("weekly_window")
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "five_hour_window must be an object",
-    )
-
-
-def test_ollama_rejects_invalid_reset_at(ollama_payload: dict[str, Any]) -> None:
-    """Ollama reset_at must be ISO 8601."""
-    payload = clone_payload(ollama_payload)
-    payload["provider_data"]["weekly_usage"]["reset_at"] = "not-a-date"
-
-    _assert_validation_error(
-        payload,
-        INGEST_STATUS_INVALID_CONTRACT,
-        "provider_data.weekly_usage.reset_at must be an ISO 8601 datetime",
-    )
+def test_error_status_allows_empty_usage(error_payload: dict[str, Any]) -> None:
+    """Error payloads can be unscoped and contain no windows."""
+    envelope = validate_payload(error_payload)
+    assert envelope.status == "not_authenticated"
+    assert envelope.usage_data == {"windows": []}

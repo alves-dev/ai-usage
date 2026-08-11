@@ -128,7 +128,7 @@ async def test_ingest_valid_payload_with_webhook_context(
     assert result.ok is True
     assert len(runtime.applied_samples) == 1
     _envelope, identity, context = runtime.applied_samples[0]
-    assert identity.id_kind == "email"
+    assert identity.id_kind == "account_id"
     assert context.transport == "webhook"
     assert context.webhook_id == "ia-tool-usage"
     assert context.request_remote == "127.0.0.1"

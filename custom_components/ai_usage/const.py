@@ -12,15 +12,17 @@ CONF_WEBHOOK_ID = "webhook_id"
 
 PROVIDER_CODEX = "codex"
 PROVIDER_OLLAMA_CLOUD = "ollama_cloud"
-SUPPORTED_PROVIDERS = (PROVIDER_CODEX, PROVIDER_OLLAMA_CLOUD)
+PROVIDER_UNKNOWN = "unknown"
+SUPPORTED_PROVIDERS = (PROVIDER_CODEX, PROVIDER_OLLAMA_CLOUD, PROVIDER_UNKNOWN)
 
 PROVIDER_NAMES = {
     PROVIDER_CODEX: "Codex",
     PROVIDER_OLLAMA_CLOUD: "Ollama Cloud",
+    PROVIDER_UNKNOWN: "Unknown provider",
 }
 
-PAYLOAD_SCHEMA_VERSION = "1.1"
-KNOWN_SOURCES = (
+PAYLOAD_SCHEMA_VERSION = "2.0"
+KNOWN_COLLECTORS = (
     "browser_extension",
     "shell_script",
     "python_collector",
@@ -57,8 +59,6 @@ INGEST_STATUSES = (
     INGEST_STATUS_UNKNOWN_ERROR,
 )
 
-PLAN_TYPES = ("free", "plus", "pro", "team", "enterprise", "unknown")
-
 PARENT_SENSOR_KEYS = (
     "last_ingest_status",
     "last_webhook_received_at",
@@ -79,40 +79,10 @@ COMMON_ACCOUNT_SENSOR_KEYS = (
     "source",
     "request_count",
 )
-COMMON_ACCOUNT_BINARY_SENSOR_KEYS = ("problem",)
-
-CODEX_SENSOR_KEYS = (
-    "five_hour_usage_used_percent",
-    "five_hour_usage_available_percent",
-    "five_hour_usage_reset_at",
-    "five_hour_usage_reset_after",
-    "weekly_usage_used_percent",
-    "weekly_usage_available_percent",
-    "weekly_usage_reset_at",
-    "weekly_usage_reset_after",
-)
-CODEX_BINARY_SENSOR_KEYS = ("allowed", "limit_reached")
-
-OLLAMA_CLOUD_SENSOR_KEYS = (
-    "session_usage_used_percent",
-    "session_usage_available_percent",
-    "session_usage_reset_at",
-    "weekly_usage_used_percent",
-    "weekly_usage_available_percent",
-    "weekly_usage_reset_at",
-)
-OLLAMA_CLOUD_BINARY_SENSOR_KEYS: tuple[str, ...] = ()
-
-PROVIDER_SENSOR_KEYS = {
-    PROVIDER_CODEX: CODEX_SENSOR_KEYS,
-    PROVIDER_OLLAMA_CLOUD: OLLAMA_CLOUD_SENSOR_KEYS,
-}
-PROVIDER_BINARY_SENSOR_KEYS = {
-    PROVIDER_CODEX: CODEX_BINARY_SENSOR_KEYS,
-    PROVIDER_OLLAMA_CLOUD: OLLAMA_CLOUD_BINARY_SENSOR_KEYS,
-}
+COMMON_ACCOUNT_BINARY_SENSOR_KEYS = ("problem", "available")
 
 PROVIDER_IMAGE_URL_BASE = f"/api/{DOMAIN}/provider_images"
+UNKNOWN_PROVIDER_CONFIGURATION_URL = "https://github.com/alves-dev/ai-usage"
 PROVIDER_IMAGE_FILES = {
     PROVIDER_CODEX: "codex.png",
     PROVIDER_OLLAMA_CLOUD: "ollama_cloud.png",

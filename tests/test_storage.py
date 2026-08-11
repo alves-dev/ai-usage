@@ -21,7 +21,8 @@ def test_storage_item_requires_supported_provider_and_key() -> None:
     """Malformed storage records should be ignored."""
     assert _account_from_storage_item(None) is None
     assert (
-        _account_from_storage_item({"provider": "unknown", "account_key": "x"}) is None
+        _account_from_storage_item({"provider": "unknown", "account_key": "x"})
+        is not None
     )
     assert _account_from_storage_item({"provider": "codex"}) is None
 
@@ -81,7 +82,7 @@ async def test_storage_load_filters_invalid_records() -> None:
         storage = AIUsageStorage(hass, "entry-1")
         accounts = await storage.async_load_accounts()
 
-    assert [account.account_key for account in accounts] == ["one"]
+    assert [account.account_key for account in accounts] == ["one", "two"]
 
 
 async def test_storage_load_handles_missing_shapes() -> None:

@@ -16,37 +16,43 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 def codex_payload() -> dict[str, Any]:
     """Return a valid Codex payload."""
     return {
-        "schema_version": "1.1",
-        "source": "manual_test",
-        "source_version": "0.1.0",
+        "schema_version": "2.0",
+        "collector_data": {
+            "id": "manual_test",
+            "version": "1.0.0",
+            "transport": "test",
+        },
         "collected_at": "2026-06-03T18:30:00.000Z",
         "provider": "codex",
         "status": "ok",
         "account_data": {
-            "user_id": "user-manual-codex",
-            "account_id": "acct-manual-codex",
+            "id": "acct-manual-codex",
+            "id_kind": "provider_account_id",
+            "label": "Codex manual",
             "email": "codex.manual@example.com",
+            "plan": {"type": "plus"},
         },
-        "plan_data": {
-            "type": "plus",
-        },
-        "provider_data": {
-            "rate_limit": {
-                "allowed": True,
-                "limit_reached": False,
-                "five_hour_window": {
+        "usage_data": {
+            "windows": [
+                {
+                    "id": "short",
+                    "label": "5-hour window",
+                    "duration_seconds": 18000,
                     "used_percent": 12.5,
-                    "limit_window_seconds": 18000,
                     "reset_after_seconds": 14400,
-                    "reset_at": 1780434415,
+                    "reset_at": "2026-06-03T22:30:00.000Z",
+                    "limit_reached": False,
                 },
-                "weekly_window": {
+                {
+                    "id": "long",
+                    "label": "Weekly window",
+                    "duration_seconds": 604800,
                     "used_percent": 37.2,
-                    "limit_window_seconds": 604800,
                     "reset_after_seconds": 428946,
-                    "reset_at": 1780846229,
+                    "reset_at": "2026-06-08T00:00:00.000Z",
+                    "limit_reached": False,
                 },
-            },
+            ]
         },
         "error": None,
     }
@@ -56,28 +62,42 @@ def codex_payload() -> dict[str, Any]:
 def ollama_payload() -> dict[str, Any]:
     """Return a valid Ollama Cloud payload."""
     return {
-        "schema_version": "1.1",
-        "source": "manual_test",
-        "source_version": "0.1.0",
+        "schema_version": "2.0",
+        "collector_data": {
+            "id": "manual_test",
+            "version": "1.0.0",
+            "transport": "test",
+        },
         "collected_at": "2026-06-03T18:30:00.000Z",
         "provider": "ollama_cloud",
         "status": "ok",
         "account_data": {
+            "id": "ollama-account-manual",
+            "id_kind": "provider_account_id",
+            "label": "Ollama manual",
             "username": "ollama-manual",
             "email": "ollama.manual@example.com",
+            "plan": {"type": "free"},
         },
-        "plan_data": {
-            "type": "free",
-        },
-        "provider_data": {
-            "session_usage": {
-                "used_percent": 8.0,
-                "reset_at": "2026-06-03T22:00:00.000Z",
-            },
-            "weekly_usage": {
-                "used_percent": 44.4,
-                "reset_at": "2026-06-08T00:00:00.000Z",
-            },
+        "usage_data": {
+            "windows": [
+                {
+                    "id": "session",
+                    "label": "Session window",
+                    "duration_seconds": 18000,
+                    "used_percent": 8.0,
+                    "reset_at": "2026-06-03T22:00:00.000Z",
+                    "limit_reached": False,
+                },
+                {
+                    "id": "weekly",
+                    "label": "Weekly window",
+                    "duration_seconds": 604800,
+                    "used_percent": 44.4,
+                    "reset_at": "2026-06-08T00:00:00.000Z",
+                    "limit_reached": False,
+                },
+            ]
         },
         "error": None,
     }
@@ -87,15 +107,17 @@ def ollama_payload() -> dict[str, Any]:
 def error_payload() -> dict[str, Any]:
     """Return a valid provider error payload without account identity."""
     return {
-        "schema_version": "1.1",
-        "source": "manual_test",
-        "source_version": "0.1.0",
+        "schema_version": "2.0",
+        "collector_data": {
+            "id": "manual_test",
+            "version": "1.0.0",
+            "transport": "test",
+        },
         "collected_at": "2026-06-03T18:30:00.000Z",
         "provider": "codex",
         "status": "not_authenticated",
         "account_data": {},
-        "plan_data": {},
-        "provider_data": {},
+        "usage_data": {"windows": []},
         "error": {
             "code": "not_authenticated",
             "message": "Manual test: user is not logged in",
