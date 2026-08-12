@@ -47,10 +47,6 @@
 AI Usage is a custom Home Assistant integration that receives AI tool usage data
 and turns it into sensors.
 
-> [!IMPORTANT]
-> AI Usage is still beta until it reaches `v1.0.0`. Entity names, attributes,
-> and provider-specific sensors may change before the stable release.
-
 It is designed for simple dashboard questions:
 
 - Can my account still use the service?
@@ -143,83 +139,51 @@ need collector/source debugging, raw receive timestamps, or request counters.
 
 ## Lovelace Card
 
-This repository includes a small custom Lovelace card example for the two-window
-usage view described by the integration sensors.
+The repository includes a provider-agnostic card for the normalized window
+entities. It shows remaining capacity, usage, reset countdowns, limit states,
+and the overall account availability. The progress bar represents consumed
+capacity, while the percentage displayed on the right represents capacity
+remaining.
 
-Source file:
+![AI Usage Windows card example](docs/images/card-example.png)
 
-- [examples/lovelace/ai-usage-windows-card.js](examples/lovelace/ai-usage-windows-card.js)
+### Setup
 
-The card follows Home Assistant custom card conventions:
+After the integration has received at least one account payload, add **AI
+Usage Windows** from the dashboard card picker. The integration serves and
+registers the card automatically; no JavaScript copy or manual Lovelace
+resource is required. Restart Home Assistant after installing or updating the
+integration so the frontend loads the bundled module. Select the account
+sensor, availability sensor, and the entities for each window. The visual
+editor lets you select entities directly from Home Assistant, without editing
+YAML.
 
-- it reads only Home Assistant entities;
-- it uses `ha-card` and Home Assistant theme variables;
-- it stays provider-agnostic by accepting entity IDs in the card config.
-
-Card configuration:
-
-- `name`: provider or account name shown in the header
-- `subtitle`: optional secondary text below the name
-- `icon_url`: optional image URL for the header icon
-- `icon`: optional MDI icon when `icon_url` is not used
-- `status_entity`: entity that drives the status chip in the header
-- `primary_name`: display name for the first window
-- `primary_available_entity`: available percentage entity for the first window
-- `primary_reset_entity`: reset timestamp entity for the first window
-- `secondary_name`: display name for the second window
-- `secondary_available_entity`: available percentage entity for the second window
-- `secondary_reset_entity`: reset timestamp entity for the second window
-
-To use it:
-
-1. Copy `examples/lovelace/ai-usage-windows-card.js` to
-   `/config/www/ai-usage-windows-card.js`.
-2. Add it as a dashboard resource.
-3. Create a manual card with one of the examples below.
-
-Dashboard resource:
-
-```yaml
-url: /local/ai-usage-windows-card.js
-type: module
-```
-
-Example for Codex:
+Example:
 
 ```yaml
 type: custom:ai-usage-windows-card
-name: Codex
-subtitle: OpenAI Plus
-icon_url: /local/codex.png
-status_entity: binary_sensor.allowed
-primary_name: 5-hour window
-primary_available_entity: sensor.five_hour_usage_available_percent
-primary_reset_entity: sensor.five_hour_usage_reset_at
-secondary_name: Weekly window
-secondary_available_entity: sensor.weekly_usage_available_percent
-secondary_reset_entity: sensor.weekly_usage_reset_at
+title: Codex
+account_entity: sensor.account
+availability_entity: binary_sensor.available
+windows:
+  - label: 5-hour window
+    used_entity: sensor.window_short_used_percent
+    available_entity: sensor.window_short_available_percent
+    limit_entity: binary_sensor.window_short_limit_reached
+    reset_entity: sensor.window_short_reset_at
+  - label: Weekly window
+    used_entity: sensor.window_long_used_percent
+    available_entity: sensor.window_long_available_percent
+    limit_entity: binary_sensor.window_long_limit_reached
+    reset_entity: sensor.window_long_reset_at
 ```
 
-Example for Ollama Cloud:
-
-```yaml
-type: custom:ai-usage-windows-card
-name: Ollama Cloud
-subtitle: Pro
-icon: mdi:robot-outline
-status_entity: sensor.status
-primary_name: Session window
-primary_available_entity: sensor.session_usage_available_percent
-primary_reset_entity: sensor.session_usage_reset_at
-secondary_name: Weekly window
-secondary_available_entity: sensor.weekly_usage_available_percent
-secondary_reset_entity: sensor.weekly_usage_reset_at
-```
-
-Optional tuning:
-
-- `warning_threshold`: defaults to `40`
-- `critical_threshold`: defaults to `15`
+The card supports any number of windows and adapts to mobile layouts. Each
+window displays its label, remaining percentage, consumed percentage, reset
+status, and reset time. The entity ID is the stable technical identity; the
+configured label is only the visible name. Use
+`warning_threshold` and `critical_threshold` to customize the visual warning
+levels; their defaults are `40` and `15` percent remaining.
 
 ## HACS Installation
 

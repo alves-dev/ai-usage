@@ -39,7 +39,19 @@ class AIUsageWindowsCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 3 + Math.max(0, (this._config?.windows?.length || 2) - 2);
+    const windowCount = Math.max(1, this._config?.windows?.length || 0);
+    return 4 + windowCount;
+  }
+
+  getGridOptions() {
+    const windowCount = Math.max(1, this._config?.windows?.length || 0);
+    const rows = 4 + windowCount;
+    return {
+      rows,
+      columns: 6,
+      min_rows: 4,
+      min_columns: 3,
+    };
   }
 
   _render() {
@@ -100,7 +112,8 @@ class AIUsageWindowsCard extends HTMLElement {
 
   _windowTemplate(item) {
     const value = item.value == null ? "—" : `${Math.round(item.value)}%`;
-    const width = item.value == null ? 0 : item.value;
+    const used = item.used ?? (item.value == null ? null : 100 - item.value);
+    const width = used == null ? 0 : Math.max(0, Math.min(100, used));
     const limitText = item.limitReached ? "Limit reached" : item.reset ? `Resets ${this._relative(item.reset)}` : "Reset unavailable";
     return `
       <article class="window ${item.tone}">

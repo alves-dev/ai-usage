@@ -22,6 +22,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Added `scripts/manual_collector.py` and its usage documentation for manual
   webhook testing.
+- Added the AI Usage Windows Lovelace card to the integration and registered it
+  automatically in the Home Assistant frontend.
 
 ## [0.0.3] - 2026-08-02
 
