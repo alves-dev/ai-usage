@@ -114,7 +114,7 @@ class AIUsageWindowsCard extends HTMLElement {
     const value = item.value == null ? "—" : `${Math.round(item.value)}%`;
     const used = item.used ?? (item.value == null ? null : 100 - item.value);
     const width = used == null ? 0 : Math.max(0, Math.min(100, used));
-    const limitText = item.limitReached ? "Limit reached" : item.reset ? `Resets ${this._relative(item.reset)}` : "Reset unavailable";
+    const limitText = item.limitReached ? "Limit reached" : item.reset ? `Resets ${this._relative(item.reset, true)}` : "Reset unavailable";
     return `
       <article class="window ${item.tone}">
         <div class="window-top">
@@ -149,10 +149,18 @@ class AIUsageWindowsCard extends HTMLElement {
     return date ? this._relative(date) : "";
   }
 
-  _relative(value) {
+  _relative(value, future = false) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+    const difference = Math.round((Date.now() - date.getTime()) / 1000);
+    if (future && difference < 0) {
+      const seconds = Math.abs(difference);
+      if (seconds < 60) return "in <1m";
+      if (seconds < 3600) return `in ${Math.round(seconds / 60)}m`;
+      if (seconds < 86400) return `in ${Math.round(seconds / 3600)}h`;
+      return `in ${Math.round(seconds / 86400)}d`;
+    }
+    const seconds = Math.max(0, difference);
     if (seconds < 60) return "just now";
     if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;

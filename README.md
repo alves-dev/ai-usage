@@ -285,8 +285,12 @@ The webhook ID is a secret. The script sends only the normalized payload.
 
 The integration and its maintained collectors use the Home Assistant-style
 format `YYYY.M.patch`, for example `2026.8.1`. Development builds use the
-`-dev` suffix, for example `2026.8.1-dev`. The release workflow updates all
-version sources with:
+`-dev` suffix, for example `2026.8.1-dev`. The stable release workflow reads
+the release version automatically from `custom_components/ai_usage/manifest.json`.
+After a version change is merged into `main`, it creates the tag and GitHub
+Release automatically. The develop workflow creates a prerelease using the
+same manifest version with `-dev` appended, for example `v2026.8.1-dev`.
+To prepare a new version locally, update all version sources with:
 
 ```bash
 python3 scripts/set_version.py 2026.8.1
