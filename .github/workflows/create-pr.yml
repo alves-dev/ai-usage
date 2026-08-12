@@ -1,4 +1,4 @@
-name: "[DEV] PR Sync Develop -> Main"
+name: Create Pull Request
 
 on:
   push:
