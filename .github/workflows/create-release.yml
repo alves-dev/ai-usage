@@ -60,28 +60,19 @@ jobs:
             echo "body=# $tag"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Update manifest version
+      - name: Update version sources
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: |
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
+          python3 scripts/set_version.py "$VERSION"
 
-          path = Path("custom_components/ai_usage/manifest.json")
-          data = json.loads(path.read_text())
-          data["version"] = os.environ["VERSION"]
-          path.write_text(json.dumps(data, indent=2) + "\n")
-          PY
-
-      - name: Commit manifest version
+      - name: Commit version sources
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          if ! git diff --quiet -- custom_components/ai_usage/manifest.json; then
-            git add custom_components/ai_usage/manifest.json
+          if ! git diff --quiet -- custom_components/ai_usage/manifest.json custom_components/ai_usage/const.py pyproject.toml README.md; then
+            git add custom_components/ai_usage/manifest.json custom_components/ai_usage/const.py pyproject.toml README.md
             git commit -m "chore: release ${{ steps.release.outputs.tag }}"
             git push origin main
           fi

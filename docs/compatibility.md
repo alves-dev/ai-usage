@@ -4,6 +4,8 @@ The table below describes the compatibility between the integration versions and
 
 | Integration Version | HA Version  Supported      | HA Version Not Supported |
 |---------------------|----------------------------|--------------------------|
+| `2026.8.0`          | `2026.8`                   | ---                      |
+| `0.0.3`             | `2026.7`                   | ---                      |
 | `0.0.2`             | `2026.7`                   | ---                      |
 | `0.0.1`             | `2026.4` `2026.5` `2026.6` | ---                      |
 

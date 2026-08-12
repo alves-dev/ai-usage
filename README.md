@@ -20,6 +20,7 @@
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2026.4%2B-41BDF5?style=flat-square">
   <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom%20Integration-18BC9C?style=flat-square">
   <img alt="Providers" src="https://img.shields.io/badge/Providers-Codex%20%7C%20Ollama%20Cloud-7C3AED?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2026.8.0-41BDF5?style=flat-square">
 </p>
 
 <p align="center">
@@ -102,7 +103,7 @@ each identified AI account.
 | Entity                    | Type          | What it shows                                                                                                                                                                                |
 |---------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `sensor.account`          | Sensor        | Account label and account metadata, using the best available identifier from the payload.                                                                                                    |
-| `sensor.plan`             | Sensor        | Account plan from `plan_data.type`, such as `free`, `plus`, or `pro`. This is a normal account sensor, not a diagnostic-only sensor, because it can be useful in dashboards and automations. |
+| `sensor.plan`             | Sensor        | Account plan from `account_data.plan.type`, such as `free`, `plus`, or `pro`. This is a normal account sensor, not a diagnostic-only sensor, because it can be useful in dashboards and automations. |
 | `sensor.status`           | Sensor        | Provider status for the latest account sample, such as `ok`, `not_authenticated`, `rate_limited`, or `provider_unavailable`.                                                                 |
 | `binary_sensor.problem`   | Binary sensor | Turns on when `sensor.status` is not `ok`.                                                                                                                                                   |
 | `sensor.last_sample_age`  | Sensor        | Age of the last sample received for that account, in minutes. Helps detect stale data even when the last status was `ok`.                                                                    |
@@ -112,31 +113,17 @@ each identified AI account.
 | `sensor.source`           | Sensor        | Source that produced the account payload. Disabled by default.                                                                                                                               |
 | `sensor.request_count`    | Sensor        | Number of accepted samples received for that account. Disabled by default.                                                                                                                   |
 
-### Codex Account Sensors
+### Account Window Sensors
 
-| Entity                                      | Type          | What it shows                                                                                                                                                                                                                                           |
-|---------------------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `binary_sensor.allowed`                     | Binary sensor | Whether Codex currently allows new usage according to the rate-limit data. This is different from `sensor.status`: status says whether the account sample was collected successfully; allowed says whether usage is permitted inside that valid sample. |
-| `binary_sensor.limit_reached`               | Binary sensor | Whether Codex reports that the account has reached a usage limit.                                                                                                                                                                                       |
-| `sensor.five_hour_usage_used_percent`       | Sensor        | Percent used in the Codex 5-hour usage limit, displayed without decimal places.                                                                                                                                                                         |
-| `sensor.five_hour_usage_available_percent`  | Sensor        | Percent still available in the Codex 5-hour usage limit.                                                                                                                                                                                                |
-| `sensor.five_hour_usage_reset_at`           | Sensor        | Timestamp when the Codex 5-hour usage limit resets.                                                                                                                                                                                                     |
-| `sensor.five_hour_usage_reset_after`        | Sensor        | Duration until the Codex 5-hour usage limit resets, shown in hours instead of raw seconds.                                                                                                                                                              |
-| `sensor.weekly_usage_used_percent`          | Sensor        | Percent used in the Codex weekly usage limit, displayed without decimal places.                                                                                                                                                                         |
-| `sensor.weekly_usage_available_percent`     | Sensor        | Percent still available in the Codex weekly usage limit.                                                                                                                                                                                                |
-| `sensor.weekly_usage_reset_at`              | Sensor        | Timestamp when the Codex weekly usage limit resets.                                                                                                                                                                                                     |
-| `sensor.weekly_usage_reset_after`           | Sensor        | Duration until the Codex weekly usage limit resets, shown in hours instead of raw seconds.                                                                                                                                                              |
+For each item in `usage_data.windows`, the integration creates:
 
-### Ollama Cloud Account Sensors
-
-| Entity                                   | Type   | What it shows                                                                              |
-|------------------------------------------|--------|--------------------------------------------------------------------------------------------|
-| `sensor.session_usage_used_percent`      | Sensor | Percent used in the current Ollama Cloud session window, displayed without decimal places. |
-| `sensor.session_usage_available_percent` | Sensor | Percent still available in the current Ollama Cloud session window.                        |
-| `sensor.session_usage_reset_at`          | Sensor | Timestamp when the Ollama Cloud session usage resets.                                      |
-| `sensor.weekly_usage_used_percent`       | Sensor | Percent used in the current Ollama Cloud weekly window, displayed without decimal places.  |
-| `sensor.weekly_usage_available_percent`  | Sensor | Percent still available in the current Ollama Cloud weekly window.                         |
-| `sensor.weekly_usage_reset_at`           | Sensor | Timestamp when the Ollama Cloud weekly usage resets.                                       |
+| Entity pattern | Type | What it shows |
+|---|---|---|
+| `sensor.window_<id>_used_percent` | Sensor | Percent used in the window. |
+| `sensor.window_<id>_available_percent` | Sensor | Percent available, derived by the integration. |
+| `binary_sensor.window_<id>_limit_reached` | Binary sensor | Whether that window reached its limit. |
+| `sensor.window_<id>_reset_at` | Sensor | Timestamp of the next reset. |
+| `binary_sensor.available` | Binary sensor | Whether at least one account window remains available. |
 
 ### Status And Limit Signals
 
@@ -145,8 +132,8 @@ each identified AI account.
 | `sensor.last_ingest_status`   | Webhook        | Collector and webhook health  | Whether Home Assistant accepted the last webhook request. This can fail even when the provider account itself is fine.                       |
 | `sensor.status`               | Account        | Provider sample health        | Whether the latest account sample was collected successfully from the provider. `ok` means the payload is valid and provider data is usable. |
 | `binary_sensor.problem`       | Account        | Account-level alerts          | Turns on when `sensor.status` is not `ok`. Use this for provider/account errors such as authentication or rate-limit failures.               |
-| `binary_sensor.allowed`       | Codex account  | Usage availability            | Whether Codex currently allows new usage according to the latest rate-limit sample. This is separate from `sensor.status`.                   |
-| `binary_sensor.limit_reached` | Codex account  | Limit alerts                  | Whether Codex reports that a usage limit has been reached.                                                                                   |
+| `binary_sensor.available`     | Account        | Usage availability            | Whether at least one usage window remains available.                                                                                          |
+| `binary_sensor.window_*_limit_reached` | Account window | Limit alerts | Whether that specific usage window has reached its limit. |
 | `sensor.*_used_percent`       | Account window | Usage dashboards              | How much of a usage window has already been consumed.                                                                                        |
 | `sensor.*_available_percent`  | Account window | Remaining capacity dashboards | How much of a usage window is still available.                                                                                               |
 
@@ -307,8 +294,12 @@ read:
 - [Payload contract](docs/payload-contract.md)
 - [Device and sensor contract](docs/device-and-sensor-contract.md)
 - [Generic provider contract](docs/generic-provider-contract.md)
+- [Standardized window payload decisions](docs/standardized-window-payload-proposal.md)
+- [Manual collector](docs/manual-collector.md)
+- [AI Usage browser extension](https://github.com/alves-dev/ai-usage-extension)
 - [Stable account identity decision](docs/account-stable-id-decision.md)
 - [Implementation specification](docs/implementation-spec.md)
+- [Versioning](docs/versioning.md)
 - [Home Assistant compatibility](docs/compatibility.md)
 - [Changelog](CHANGELOG.md)
 
