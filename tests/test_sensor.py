@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -10,32 +9,28 @@ from homeassistant.const import UnitOfTime
 
 from custom_components.ai_usage.models import AccountState
 from custom_components.ai_usage.sensor import (
-    CODEX_SENSOR_DESCRIPTIONS,
     COMMON_ACCOUNT_SENSOR_DESCRIPTIONS,
     INTEGRATION_SENSOR_DESCRIPTIONS,
-    OLLAMA_CLOUD_SENSOR_DESCRIPTIONS,
+    _account_sensor_descriptions,
 )
 
-EXPECTED_DISABLED_ACCOUNT_SENSOR_KEYS = {
-    "collected_at",
-    "last_error",
-    "last_received_at",
-    "request_count",
-    "source",
-}
-EXPECTED_DISABLED_INTEGRATION_SENSOR_KEYS = {
-    "last_source",
-    "last_unscoped_error",
-}
-EXPECTED_DISPLAY_PRECISION = 0
-EXPECTED_PRIMARY_AVAILABLE_PERCENT = 87.5
-EXPECTED_PRIMARY_USED_PERCENT = 12.5
-EXPECTED_RESET_AFTER_HOURS = 4
-EXPECTED_RESET_AFTER_SECONDS = 14400
-EXPECTED_SESSION_AVAILABLE_PERCENT = 92.0
-EXPECTED_SESSION_USED_PERCENT = 8.0
-EXPECTED_LAST_SAMPLE_AGE_MIN = 29.8
-EXPECTED_LAST_SAMPLE_AGE_MAX = 30.2
+AGE_MINUTES_LOWER = 29.8
+AGE_MINUTES_UPPER = 30.2
+SHORT_USED_PERCENT = 12.5
+SHORT_AVAILABLE_PERCENT = 87.5
+EXPECTED_WINDOW_COUNT = 2
+
+
+def _state(codex_payload: dict[str, Any]) -> AccountState:
+    return AccountState(
+        provider="codex",
+        account_key="acct-test",
+        account_key_quality="stable",
+        account_label="Test",
+        usage_data=codex_payload["usage_data"],
+        status="ok",
+        last_received_at=datetime.now(UTC),
+    )
 
 
 def test_last_sample_age_is_reported_in_minutes(
@@ -43,166 +38,80 @@ def test_last_sample_age_is_reported_in_minutes(
 ) -> None:
     """Last sample age is derived from the last received timestamp."""
     received_at = datetime.now(UTC) - timedelta(minutes=30)
-    state = AccountState(
-        provider="codex",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        collected_at=datetime(2026, 6, 3, 18, 30, tzinfo=UTC),
-        last_received_at=received_at,
-        status="ok",
-        provider_data=codex_payload["provider_data"],
-    )
+    state = _state(codex_payload)
+    state.last_received_at = received_at
     description = next(
         item
         for item in COMMON_ACCOUNT_SENSOR_DESCRIPTIONS
         if item.key == "last_sample_age"
     )
-
     assert description.native_unit_of_measurement == UnitOfTime.MINUTES
-    assert description.suggested_display_precision == 1
-    assert EXPECTED_LAST_SAMPLE_AGE_MIN <= description.value_fn(state) <= (
-        EXPECTED_LAST_SAMPLE_AGE_MAX
-    )
-    assert (
-        description.attributes_fn(state)["last_received_at"]
-        == received_at.isoformat()
-    )
+    assert AGE_MINUTES_LOWER <= description.value_fn(state) <= AGE_MINUTES_UPPER
 
 
-def test_codex_reset_after_sensors_expose_hours(
+def test_window_sensors_use_stable_window_id_and_derive_available(
     codex_payload: dict[str, Any],
 ) -> None:
-    """Codex reset-after sensor states are hours, not raw payload seconds."""
-    state = AccountState(
-        provider="codex",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        provider_data=codex_payload["provider_data"],
+    """Each window creates used, available and reset sensors."""
+    state = _state(codex_payload)
+    descriptions = _account_sensor_descriptions(state)
+    available = next(
+        item for item in descriptions if item.key == "window_short_available_percent"
     )
-    description = next(
-        item
-        for item in CODEX_SENSOR_DESCRIPTIONS
-        if item.key == "five_hour_usage_reset_after"
+    used = next(
+        item for item in descriptions if item.key == "window_short_used_percent"
     )
-
-    assert description.native_unit_of_measurement == UnitOfTime.HOURS
-    assert description.value_fn(state) == EXPECTED_RESET_AFTER_HOURS
-    assert (
-        description.attributes_fn(state)["reset_after_seconds"]
-        == EXPECTED_RESET_AFTER_SECONDS
-    )
+    reset = next(item for item in descriptions if item.key == "window_short_reset_at")
+    assert used.value_fn(state) == SHORT_USED_PERCENT
+    assert available.value_fn(state) == SHORT_AVAILABLE_PERCENT
+    assert reset.value_fn(state) == datetime(2026, 6, 3, 22, 30, tzinfo=UTC)
+    assert available.attributes_fn(state)["used_percent"] == SHORT_USED_PERCENT
 
 
-def test_codex_available_percent_is_derived_from_used_percent(
+def test_new_window_is_supported_without_provider_code(
     codex_payload: dict[str, Any],
 ) -> None:
-    """Codex available percentage is calculated from used percentage."""
-    state = AccountState(
-        provider="codex",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        provider_data=codex_payload["provider_data"],
-    )
-    description = next(
-        item
-        for item in CODEX_SENSOR_DESCRIPTIONS
-        if item.key == "five_hour_usage_available_percent"
-    )
-
-    assert description.suggested_display_precision == EXPECTED_DISPLAY_PRECISION
-    assert description.value_fn(state) == EXPECTED_PRIMARY_AVAILABLE_PERCENT
-    assert (
-        description.attributes_fn(state)["used_percent"]
-        == EXPECTED_PRIMARY_USED_PERCENT
-    )
+    """A third window produces the same generic sensor set."""
+    payload = dict(codex_payload["usage_data"])
+    payload["windows"] = [
+        *payload["windows"],
+        {
+            "id": "daily",
+            "label": "Daily window",
+            "duration_seconds": 86400,
+            "used_percent": 50,
+            "reset_at": "2026-06-04T00:00:00Z",
+            "limit_reached": True,
+        },
+    ]
+    state = _state(codex_payload)
+    state.usage_data = payload
+    keys = {description.key for description in _account_sensor_descriptions(state)}
+    assert "window_daily_used_percent" in keys
+    assert "window_daily_available_percent" in keys
 
 
-def test_codex_window_sensors_are_empty_when_window_is_unavailable(
-    codex_payload: dict[str, Any],
-) -> None:
-    """Codex sensors must not reuse another window when one is null."""
-    provider_data = deepcopy(codex_payload["provider_data"])
-    provider_data["rate_limit"]["five_hour_window"] = None
-    state = AccountState(
-        provider="codex",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        provider_data=provider_data,
-    )
-
-    description = next(
-        item
-        for item in CODEX_SENSOR_DESCRIPTIONS
-        if item.key == "five_hour_usage_used_percent"
-    )
-
-    assert description.value_fn(state) is None
-    assert description.attributes_fn(state) == {"window": "five_hour"}
-
-
-def test_all_codex_sensor_descriptions_are_evaluable(
-    codex_payload: dict[str, Any],
-) -> None:
-    """Every Codex sensor description must evaluate a complete sample."""
-    state = AccountState(
-        provider="codex",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        provider_data=deepcopy(codex_payload["provider_data"]),
-    )
-
-    for description in CODEX_SENSOR_DESCRIPTIONS:
-        description.value_fn(state)
-        description.attributes_fn(state)
-
-
-def test_ollama_available_percent_is_derived_from_used_percent(
-    ollama_payload: dict[str, Any],
-) -> None:
-    """Ollama Cloud available percentage is calculated from used percentage."""
-    state = AccountState(
-        provider="ollama_cloud",
-        account_key="acct-test",
-        account_key_quality="stable",
-        account_label="test@example.com",
-        provider_data=ollama_payload["provider_data"],
-    )
-    description = next(
-        item
-        for item in OLLAMA_CLOUD_SENSOR_DESCRIPTIONS
-        if item.key == "session_usage_available_percent"
-    )
-
-    assert description.suggested_display_precision == EXPECTED_DISPLAY_PRECISION
-    assert description.value_fn(state) == EXPECTED_SESSION_AVAILABLE_PERCENT
-    assert (
-        description.attributes_fn(state)["used_percent"]
-        == EXPECTED_SESSION_USED_PERCENT
-    )
-
-
-def test_low_level_account_diagnostic_sensors_are_disabled_by_default() -> None:
-    """Low-level account diagnostics do not clutter new installs by default."""
-    disabled_keys = {
+def test_low_level_diagnostic_sensors_are_disabled_by_default() -> None:
+    """Low-level account diagnostics do not clutter new installs."""
+    disabled = {
         item.key
         for item in COMMON_ACCOUNT_SENSOR_DESCRIPTIONS
         if item.entity_registry_enabled_default is False
     }
+    assert disabled == {
+        "collected_at",
+        "last_error",
+        "last_received_at",
+        "request_count",
+        "source",
+    }
 
-    assert disabled_keys == EXPECTED_DISABLED_ACCOUNT_SENSOR_KEYS
 
-
-def test_low_level_integration_diagnostic_sensors_are_disabled_by_default() -> None:
-    """Low-level integration diagnostics do not clutter new installs by default."""
-    disabled_keys = {
+def test_low_level_integration_sensors_are_disabled_by_default() -> None:
+    """Low-level integration diagnostics are disabled by default."""
+    disabled = {
         item.key
         for item in INTEGRATION_SENSOR_DESCRIPTIONS
         if item.entity_registry_enabled_default is False
     }
-
-    assert disabled_keys == EXPECTED_DISABLED_INTEGRATION_SENSOR_KEYS
+    assert disabled == {"last_source", "last_unscoped_error"}

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
@@ -14,20 +13,11 @@ class ProviderContractError(ValueError):
     """Raised when provider-specific data violates the contract."""
 
 
-class ProviderPayloadHandler(ABC):
-    """Validate provider-specific payload sections and expose metadata."""
+class ProviderPayloadHandler:
+    """Expose metadata for a provider known by the integration."""
 
     provider: str
     metadata: ProviderMetadata
-
-    @abstractmethod
-    def validate_provider_data(
-        self,
-        provider_data: Mapping[str, Any],
-        *,
-        status: str,
-    ) -> None:
-        """Validate provider-specific data."""
 
 
 def require_mapping(

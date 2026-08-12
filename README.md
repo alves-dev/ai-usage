@@ -20,6 +20,7 @@
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2026.4%2B-41BDF5?style=flat-square">
   <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom%20Integration-18BC9C?style=flat-square">
   <img alt="Providers" src="https://img.shields.io/badge/Providers-Codex%20%7C%20Ollama%20Cloud-7C3AED?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2026.8.0-41BDF5?style=flat-square">
 </p>
 
 <p align="center">
@@ -45,10 +46,6 @@
 
 AI Usage is a custom Home Assistant integration that receives AI tool usage data
 and turns it into sensors.
-
-> [!IMPORTANT]
-> AI Usage is still beta until it reaches `v1.0.0`. Entity names, attributes,
-> and provider-specific sensors may change before the stable release.
 
 It is designed for simple dashboard questions:
 
@@ -102,7 +99,7 @@ each identified AI account.
 | Entity                    | Type          | What it shows                                                                                                                                                                                |
 |---------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `sensor.account`          | Sensor        | Account label and account metadata, using the best available identifier from the payload.                                                                                                    |
-| `sensor.plan`             | Sensor        | Account plan from `plan_data.type`, such as `free`, `plus`, or `pro`. This is a normal account sensor, not a diagnostic-only sensor, because it can be useful in dashboards and automations. |
+| `sensor.plan`             | Sensor        | Account plan from `account_data.plan.type`, such as `free`, `plus`, or `pro`. This is a normal account sensor, not a diagnostic-only sensor, because it can be useful in dashboards and automations. |
 | `sensor.status`           | Sensor        | Provider status for the latest account sample, such as `ok`, `not_authenticated`, `rate_limited`, or `provider_unavailable`.                                                                 |
 | `binary_sensor.problem`   | Binary sensor | Turns on when `sensor.status` is not `ok`.                                                                                                                                                   |
 | `sensor.last_sample_age`  | Sensor        | Age of the last sample received for that account, in minutes. Helps detect stale data even when the last status was `ok`.                                                                    |
@@ -112,31 +109,17 @@ each identified AI account.
 | `sensor.source`           | Sensor        | Source that produced the account payload. Disabled by default.                                                                                                                               |
 | `sensor.request_count`    | Sensor        | Number of accepted samples received for that account. Disabled by default.                                                                                                                   |
 
-### Codex Account Sensors
+### Account Window Sensors
 
-| Entity                                      | Type          | What it shows                                                                                                                                                                                                                                           |
-|---------------------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `binary_sensor.allowed`                     | Binary sensor | Whether Codex currently allows new usage according to the rate-limit data. This is different from `sensor.status`: status says whether the account sample was collected successfully; allowed says whether usage is permitted inside that valid sample. |
-| `binary_sensor.limit_reached`               | Binary sensor | Whether Codex reports that the account has reached a usage limit.                                                                                                                                                                                       |
-| `sensor.five_hour_usage_used_percent`       | Sensor        | Percent used in the Codex 5-hour usage limit, displayed without decimal places.                                                                                                                                                                         |
-| `sensor.five_hour_usage_available_percent`  | Sensor        | Percent still available in the Codex 5-hour usage limit.                                                                                                                                                                                                |
-| `sensor.five_hour_usage_reset_at`           | Sensor        | Timestamp when the Codex 5-hour usage limit resets.                                                                                                                                                                                                     |
-| `sensor.five_hour_usage_reset_after`        | Sensor        | Duration until the Codex 5-hour usage limit resets, shown in hours instead of raw seconds.                                                                                                                                                              |
-| `sensor.weekly_usage_used_percent`          | Sensor        | Percent used in the Codex weekly usage limit, displayed without decimal places.                                                                                                                                                                         |
-| `sensor.weekly_usage_available_percent`     | Sensor        | Percent still available in the Codex weekly usage limit.                                                                                                                                                                                                |
-| `sensor.weekly_usage_reset_at`              | Sensor        | Timestamp when the Codex weekly usage limit resets.                                                                                                                                                                                                     |
-| `sensor.weekly_usage_reset_after`           | Sensor        | Duration until the Codex weekly usage limit resets, shown in hours instead of raw seconds.                                                                                                                                                              |
+For each item in `usage_data.windows`, the integration creates:
 
-### Ollama Cloud Account Sensors
-
-| Entity                                   | Type   | What it shows                                                                              |
-|------------------------------------------|--------|--------------------------------------------------------------------------------------------|
-| `sensor.session_usage_used_percent`      | Sensor | Percent used in the current Ollama Cloud session window, displayed without decimal places. |
-| `sensor.session_usage_available_percent` | Sensor | Percent still available in the current Ollama Cloud session window.                        |
-| `sensor.session_usage_reset_at`          | Sensor | Timestamp when the Ollama Cloud session usage resets.                                      |
-| `sensor.weekly_usage_used_percent`       | Sensor | Percent used in the current Ollama Cloud weekly window, displayed without decimal places.  |
-| `sensor.weekly_usage_available_percent`  | Sensor | Percent still available in the current Ollama Cloud weekly window.                         |
-| `sensor.weekly_usage_reset_at`           | Sensor | Timestamp when the Ollama Cloud weekly usage resets.                                       |
+| Entity pattern | Type | What it shows |
+|---|---|---|
+| `sensor.window_<id>_used_percent` | Sensor | Percent used in the window. |
+| `sensor.window_<id>_available_percent` | Sensor | Percent available, derived by the integration. |
+| `binary_sensor.window_<id>_limit_reached` | Binary sensor | Whether that window reached its limit. |
+| `sensor.window_<id>_reset_at` | Sensor | Timestamp of the next reset. |
+| `binary_sensor.available` | Binary sensor | Whether at least one account window remains available. |
 
 ### Status And Limit Signals
 
@@ -145,8 +128,8 @@ each identified AI account.
 | `sensor.last_ingest_status`   | Webhook        | Collector and webhook health  | Whether Home Assistant accepted the last webhook request. This can fail even when the provider account itself is fine.                       |
 | `sensor.status`               | Account        | Provider sample health        | Whether the latest account sample was collected successfully from the provider. `ok` means the payload is valid and provider data is usable. |
 | `binary_sensor.problem`       | Account        | Account-level alerts          | Turns on when `sensor.status` is not `ok`. Use this for provider/account errors such as authentication or rate-limit failures.               |
-| `binary_sensor.allowed`       | Codex account  | Usage availability            | Whether Codex currently allows new usage according to the latest rate-limit sample. This is separate from `sensor.status`.                   |
-| `binary_sensor.limit_reached` | Codex account  | Limit alerts                  | Whether Codex reports that a usage limit has been reached.                                                                                   |
+| `binary_sensor.available`     | Account        | Usage availability            | Whether at least one usage window remains available.                                                                                          |
+| `binary_sensor.window_*_limit_reached` | Account window | Limit alerts | Whether that specific usage window has reached its limit. |
 | `sensor.*_used_percent`       | Account window | Usage dashboards              | How much of a usage window has already been consumed.                                                                                        |
 | `sensor.*_available_percent`  | Account window | Remaining capacity dashboards | How much of a usage window is still available.                                                                                               |
 
@@ -156,83 +139,51 @@ need collector/source debugging, raw receive timestamps, or request counters.
 
 ## Lovelace Card
 
-This repository includes a small custom Lovelace card example for the two-window
-usage view described by the integration sensors.
+The repository includes a provider-agnostic card for the normalized window
+entities. It shows remaining capacity, usage, reset countdowns, limit states,
+and the overall account availability. The progress bar represents consumed
+capacity, while the percentage displayed on the right represents capacity
+remaining.
 
-Source file:
+![AI Usage Windows card example](docs/images/card-example.png)
 
-- [examples/lovelace/ai-usage-windows-card.js](examples/lovelace/ai-usage-windows-card.js)
+### Setup
 
-The card follows Home Assistant custom card conventions:
+After the integration has received at least one account payload, add **AI
+Usage Windows** from the dashboard card picker. The integration serves and
+registers the card automatically; no JavaScript copy or manual Lovelace
+resource is required. Restart Home Assistant after installing or updating the
+integration so the frontend loads the bundled module. Select the account
+sensor, availability sensor, and the entities for each window. The visual
+editor lets you select entities directly from Home Assistant, without editing
+YAML.
 
-- it reads only Home Assistant entities;
-- it uses `ha-card` and Home Assistant theme variables;
-- it stays provider-agnostic by accepting entity IDs in the card config.
-
-Card configuration:
-
-- `name`: provider or account name shown in the header
-- `subtitle`: optional secondary text below the name
-- `icon_url`: optional image URL for the header icon
-- `icon`: optional MDI icon when `icon_url` is not used
-- `status_entity`: entity that drives the status chip in the header
-- `primary_name`: display name for the first window
-- `primary_available_entity`: available percentage entity for the first window
-- `primary_reset_entity`: reset timestamp entity for the first window
-- `secondary_name`: display name for the second window
-- `secondary_available_entity`: available percentage entity for the second window
-- `secondary_reset_entity`: reset timestamp entity for the second window
-
-To use it:
-
-1. Copy `examples/lovelace/ai-usage-windows-card.js` to
-   `/config/www/ai-usage-windows-card.js`.
-2. Add it as a dashboard resource.
-3. Create a manual card with one of the examples below.
-
-Dashboard resource:
-
-```yaml
-url: /local/ai-usage-windows-card.js
-type: module
-```
-
-Example for Codex:
+Example:
 
 ```yaml
 type: custom:ai-usage-windows-card
-name: Codex
-subtitle: OpenAI Plus
-icon_url: /local/codex.png
-status_entity: binary_sensor.allowed
-primary_name: 5-hour window
-primary_available_entity: sensor.five_hour_usage_available_percent
-primary_reset_entity: sensor.five_hour_usage_reset_at
-secondary_name: Weekly window
-secondary_available_entity: sensor.weekly_usage_available_percent
-secondary_reset_entity: sensor.weekly_usage_reset_at
+title: Codex
+account_entity: sensor.account
+availability_entity: binary_sensor.available
+windows:
+  - label: 5-hour window
+    used_entity: sensor.window_short_used_percent
+    available_entity: sensor.window_short_available_percent
+    limit_entity: binary_sensor.window_short_limit_reached
+    reset_entity: sensor.window_short_reset_at
+  - label: Weekly window
+    used_entity: sensor.window_long_used_percent
+    available_entity: sensor.window_long_available_percent
+    limit_entity: binary_sensor.window_long_limit_reached
+    reset_entity: sensor.window_long_reset_at
 ```
 
-Example for Ollama Cloud:
-
-```yaml
-type: custom:ai-usage-windows-card
-name: Ollama Cloud
-subtitle: Pro
-icon: mdi:robot-outline
-status_entity: sensor.status
-primary_name: Session window
-primary_available_entity: sensor.session_usage_available_percent
-primary_reset_entity: sensor.session_usage_reset_at
-secondary_name: Weekly window
-secondary_available_entity: sensor.weekly_usage_available_percent
-secondary_reset_entity: sensor.weekly_usage_reset_at
-```
-
-Optional tuning:
-
-- `warning_threshold`: defaults to `40`
-- `critical_threshold`: defaults to `15`
+The card supports any number of windows and adapts to mobile layouts. Each
+window displays its label, remaining percentage, consumed percentage, reset
+status, and reset time. The entity ID is the stable technical identity; the
+configured label is only the visible name. Use
+`warning_threshold` and `critical_threshold` to customize the visual warning
+levels; their defaults are `40` and `15` percent remaining.
 
 ## HACS Installation
 
@@ -306,11 +257,40 @@ read:
 
 - [Payload contract](docs/payload-contract.md)
 - [Device and sensor contract](docs/device-and-sensor-contract.md)
-- [Generic provider contract](docs/generic-provider-contract.md)
-- [Stable account identity decision](docs/account-stable-id-decision.md)
-- [Implementation specification](docs/implementation-spec.md)
+- [AI Usage browser extension](https://github.com/alves-dev/ai-usage-extension)
 - [Home Assistant compatibility](docs/compatibility.md)
 - [Changelog](CHANGELOG.md)
+
+### Manual Collector
+
+Generate a valid payload without sending it:
+
+```bash
+python3 scripts/manual_collector.py
+```
+
+Send it to a webhook:
+
+```bash
+python3 scripts/manual_collector.py \
+  --url "http://homeassistant.local:8123/api/webhook/<WEBHOOK_ID>" \
+  --provider codex \
+  --short-used 80 \
+  --long-used 45
+```
+
+The webhook ID is a secret. The script sends only the normalized payload.
+
+### Versioning
+
+The integration and its maintained collectors use the Home Assistant-style
+format `YYYY.M.patch`, for example `2026.8.1`. Development builds use the
+`-dev` suffix, for example `2026.8.1-dev`. The release workflow updates all
+version sources with:
+
+```bash
+python3 scripts/set_version.py 2026.8.1
+```
 
 ## Development
 

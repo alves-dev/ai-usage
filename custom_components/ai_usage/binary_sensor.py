@@ -25,7 +25,6 @@ from .const import (
     INGEST_STATUS_OK,
     INTEGRATION_NAME,
     INTEGRATION_VERSION,
-    PROVIDER_BINARY_SENSOR_KEYS,
     PROVIDER_STATUS_OK,
     account_update_signal,
     integration_update_signal,
@@ -89,6 +88,19 @@ COMMON_ACCOUNT_BINARY_SENSOR_DESCRIPTIONS: tuple[
                 "error_message": (
                     state.error.message if state.error is not None else None
                 ),
+            }
+        ),
+    ),
+    AIUsageAccountBinarySensorDescription(
+        key="available",
+        name="Available",
+        icon="mdi:check-circle-outline",
+        value_fn=lambda state: _instance_available(state),  # noqa: PLW0108
+        attributes_fn=lambda state: _drop_none(
+            {
+                "available_windows": _available_window_ids(state),
+                "window_count": len(_windows(state)),
+                "error": state.error.code if state.error is not None else None,
             }
         ),
     ),
@@ -175,7 +187,7 @@ async def async_setup_entry(
         async_add_entities(
             [
                 AIUsageAccountBinarySensor(entry, runtime, account, description)
-                for description in _account_binary_sensor_descriptions(account.provider)
+                for description in _account_binary_sensor_descriptions(account)
             ]
         )
 
@@ -322,16 +334,28 @@ class AIUsageAccountBinarySensor(BinarySensorEntity, RestoreEntity):
 
 
 def _account_binary_sensor_descriptions(
-    provider: str,
+    account: AccountState,
 ) -> tuple[AIUsageAccountBinarySensorDescription, ...]:
-    """Return all binary sensor descriptions for a provider account."""
-    provider_keys = set(PROVIDER_BINARY_SENSOR_KEYS.get(provider, ()))
-    provider_descriptions = tuple(
-        description
-        for description in PROVIDER_BINARY_SENSOR_DESCRIPTIONS.get(provider, ())
-        if description.key in provider_keys
+    """Return common and dynamically generated window binary sensors."""
+    return COMMON_ACCOUNT_BINARY_SENSOR_DESCRIPTIONS + tuple(
+        AIUsageAccountBinarySensorDescription(
+            key=f"window_{_slug(str(window['id']))}_limit_reached",
+            name=f"{window['label']} limit reached",
+            icon="mdi:speedometer-slow",
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            value_fn=lambda state, window_id=str(window["id"]): _window_bool(
+                state, window_id, "limit_reached"
+            ),
+            attributes_fn=lambda state, window_id=str(window["id"]): _drop_none(
+                {
+                    "window_id": window_id,
+                    "label": _window_value(state, window_id, "label"),
+                    "used_percent": _window_number(state, window_id, "used_percent"),
+                }
+            ),
+        )
+        for window in _windows(account)
     )
-    return COMMON_ACCOUNT_BINARY_SENSOR_DESCRIPTIONS + provider_descriptions
 
 
 def _integration_device_info(entry: ConfigEntry) -> DeviceInfo:
@@ -360,10 +384,67 @@ def _account_device_info(
         entry_type=DeviceEntryType.SERVICE,
         manufacturer=metadata.manufacturer,
         model=metadata.model,
-        name=f"{metadata.provider_name} {account.account_label}",
+        name=account.account_label,
         via_device=(DOMAIN, entry.entry_id),
         configuration_url=metadata.configuration_url,
     )
+
+
+def _windows(state: AccountState) -> tuple[dict[str, Any], ...]:
+    """Return normalized usage windows from the account state."""
+    windows = state.usage_data.get("windows", [])
+    if not isinstance(windows, list):
+        return ()
+    return tuple(window for window in windows if isinstance(window, dict))
+
+
+def _window_value(state: AccountState, window_id: str, key: str) -> Any:
+    """Return a value from a normalized usage window."""
+    for window in _windows(state):
+        if window.get("id") == window_id:
+            return window.get(key)
+    return None
+
+
+def _window_number(
+    state: AccountState,
+    window_id: str,
+    key: str,
+) -> int | float | None:
+    """Return a numeric value from a normalized usage window."""
+    value = _window_value(state, window_id, key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value
+
+
+def _window_bool(state: AccountState, window_id: str, key: str) -> bool | None:
+    """Return a boolean value from a normalized usage window."""
+    value = _window_value(state, window_id, key)
+    return value if isinstance(value, bool) else None
+
+
+def _available_window_ids(state: AccountState) -> list[str]:
+    """Return IDs of windows that have not reached their limit."""
+    return [
+        str(window["id"])
+        for window in _windows(state)
+        if window.get("limit_reached") is False
+    ]
+
+
+def _instance_available(state: AccountState) -> bool | None:
+    """Return whether at least one valid window is available."""
+    if not state.has_sample:
+        return None
+    available = _available_window_ids(state)
+    return bool(available) if _windows(state) else False
+
+
+def _slug(value: str) -> str:
+    """Return a stable entity-safe slug for a window ID."""
+    result = "".join(char if char.isalnum() else "_" for char in value.lower())
+    return result.strip("_") or "window"
 
 
 def _codex_rate_limit_bool(state: AccountState, key: str) -> bool | None:

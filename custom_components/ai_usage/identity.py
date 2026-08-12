@@ -14,7 +14,7 @@ def resolve_account_identity(
     account_data: Mapping[str, Any],
 ) -> AccountIdentity | None:
     """Resolve the stable account identity for a provider payload."""
-    account_id = _normalize_identifier(account_data.get("account_id"))
+    account_id = _normalize_identifier(account_data.get("id"))
     if account_id is not None:
         return _build_identity(
             provider,
@@ -23,14 +23,6 @@ def resolve_account_identity(
             "stable",
             account_data,
         )
-
-    user_id = _normalize_identifier(account_data.get("user_id"))
-    if user_id is not None:
-        return _build_identity(provider, "user_id", user_id, "stable", account_data)
-
-    email = normalize_email(account_data.get("email"))
-    if email is not None:
-        return _build_identity(provider, "email", email, "email_hash", account_data)
 
     return None
 

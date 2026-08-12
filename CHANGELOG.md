@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+## [2026.8.0] - 2026-08-12
+
+### Changed
+
+- Replaced the provider-specific payload with schema `2.0`, using
+  `collector_data`, `account_data.id` and normalized `usage_data.windows`.
+- Replaced Codex/Ollama-specific usage entities with dynamic window entities.
+- The integration now derives available percentage and account availability
+  from normalized windows.
+- Provider metadata and entity images are resolved internally from the
+  provider identifier; `provider_data` is no longer part of the payload.
+
+### Added
+
+- Added `scripts/manual_collector.py` and its usage documentation for manual
+  webhook testing.
+- Added the AI Usage Windows Lovelace card to the integration and registered it
+  automatically in the Home Assistant frontend.
+
 ## [0.0.3] - 2026-08-02
 
 ### Changed

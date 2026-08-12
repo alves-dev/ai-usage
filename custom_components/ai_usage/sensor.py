@@ -28,10 +28,8 @@ from .const import (
     INGEST_STATUSES,
     INTEGRATION_NAME,
     INTEGRATION_VERSION,
-    KNOWN_SOURCES,
-    PLAN_TYPES,
+    KNOWN_COLLECTORS,
     PROVIDER_NAMES,
-    PROVIDER_SENSOR_KEYS,
     PROVIDER_STATUSES,
     account_update_signal,
     integration_update_signal,
@@ -91,7 +89,7 @@ INTEGRATION_SENSOR_DESCRIPTIONS: tuple[AIUsageIntegrationSensorDescription, ...]
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         device_class=SensorDeviceClass.ENUM,
-        options=list(KNOWN_SOURCES),
+        options=list(KNOWN_COLLECTORS),
         value_fn=lambda state: state.last_source,
         attributes_fn=lambda state: _drop_none(
             {
@@ -147,8 +145,6 @@ COMMON_ACCOUNT_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] 
         key="plan",
         name="Plan",
         icon="mdi:card-account-details-outline",
-        device_class=SensorDeviceClass.ENUM,
-        options=list(PLAN_TYPES),
         value_fn=lambda state: _mapping_str(state.plan_data, "type"),
         attributes_fn=lambda state: {"plan_data": dict(state.plan_data)},
     ),
@@ -231,7 +227,7 @@ COMMON_ACCOUNT_SENSOR_DESCRIPTIONS: tuple[AIUsageAccountSensorDescription, ...] 
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         device_class=SensorDeviceClass.ENUM,
-        options=list(KNOWN_SOURCES),
+        options=list(KNOWN_COLLECTORS),
         value_fn=lambda state: state.source,
         attributes_fn=lambda state: _drop_none(
             {
@@ -567,7 +563,7 @@ async def async_setup_entry(
         async_add_entities(
             [
                 AIUsageAccountSensor(entry, runtime, account, description)
-                for description in _account_sensor_descriptions(account.provider)
+                for description in _account_sensor_descriptions(account)
             ]
         )
 
@@ -627,7 +623,7 @@ class AIUsageIntegrationSensor(SensorEntity):
         )
 
     @callback
-    def _handle_update(self) -> None:
+    def _handle_update(self, _now: datetime | None = None) -> None:
         """Write updated state to Home Assistant."""
         self.async_write_ha_state()
 
@@ -733,22 +729,85 @@ class AIUsageAccountSensor(SensorEntity, RestoreEntity):
         )
 
     @callback
-    def _handle_update(self) -> None:
+    def _handle_update(self, _now: datetime | None = None) -> None:
         """Write updated state to Home Assistant."""
         self.async_write_ha_state()
 
 
 def _account_sensor_descriptions(
-    provider: str,
+    account: AccountState,
 ) -> tuple[AIUsageAccountSensorDescription, ...]:
-    """Return all sensor descriptions for a provider account."""
-    provider_keys = set(PROVIDER_SENSOR_KEYS.get(provider, ()))
-    provider_descriptions = tuple(
+    """Return common and dynamically generated window sensors."""
+    return COMMON_ACCOUNT_SENSOR_DESCRIPTIONS + tuple(
         description
-        for description in PROVIDER_SENSOR_DESCRIPTIONS.get(provider, ())
-        if description.key in provider_keys
+        for window in _windows(account)
+        for description in _window_sensor_descriptions(window)
     )
-    return COMMON_ACCOUNT_SENSOR_DESCRIPTIONS + provider_descriptions
+
+
+def _window_sensor_descriptions(
+    window: dict[str, Any],
+) -> tuple[AIUsageAccountSensorDescription, ...]:
+    """Build the four sensors represented by one usage window."""
+    window_id = str(window["id"])
+    slug = _slug(window_id)
+    label = str(window["label"])
+    prefix = f"window_{slug}"
+    return (
+        AIUsageAccountSensorDescription(
+            key=f"{prefix}_used_percent",
+            name=f"{label} used",
+            icon="mdi:gauge",
+            native_unit_of_measurement=PERCENTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+            value_fn=lambda state, window_id=window_id: _window_number(
+                state, window_id, "used_percent"
+            ),
+            attributes_fn=lambda state, window_id=window_id: _window_attributes(
+                state, window_id
+            ),
+        ),
+        AIUsageAccountSensorDescription(
+            key=f"{prefix}_available_percent",
+            name=f"{label} available",
+            icon="mdi:gauge-empty",
+            native_unit_of_measurement=PERCENTAGE,
+            state_class=SensorStateClass.MEASUREMENT,
+            suggested_display_precision=1,
+            value_fn=lambda state, window_id=window_id: _available_percent(
+                _window_number(state, window_id, "used_percent")
+            ),
+            attributes_fn=lambda state, window_id=window_id: _drop_none(
+                {
+                    "window_id": window_id,
+                    "used_percent": _window_number(state, window_id, "used_percent"),
+                    "label": _window_value(state, window_id, "label"),
+                }
+            ),
+        ),
+        AIUsageAccountSensorDescription(
+            key=f"{prefix}_reset_at",
+            name=f"{label} reset at",
+            icon="mdi:calendar-clock",
+            device_class=SensorDeviceClass.TIMESTAMP,
+            value_fn=lambda state, window_id=window_id: _window_datetime(
+                state, window_id
+            ),
+            attributes_fn=lambda state, window_id=window_id: _drop_none(
+                {
+                    "window_id": window_id,
+                    "label": _window_value(state, window_id, "label"),
+                    "duration_seconds": _window_number(
+                        state, window_id, "duration_seconds"
+                    ),
+                    "reset_after_seconds": _window_number(
+                        state, window_id, "reset_after_seconds"
+                    ),
+                }
+            ),
+        ),
+    )
 
 
 def _integration_device_info(entry: ConfigEntry) -> DeviceInfo:
@@ -777,7 +836,7 @@ def _account_device_info(
         entry_type=DeviceEntryType.SERVICE,
         manufacturer=metadata.manufacturer,
         model=metadata.model,
-        name=f"{metadata.provider_name} {account.account_label}",
+        name=account.account_label,
         via_device=(DOMAIN, entry.entry_id),
         configuration_url=metadata.configuration_url,
     )
@@ -805,6 +864,64 @@ def _account_attributes(state: AccountState) -> dict[str, Any]:
         "email": _mapping_str(state.account_data, "email"),
         "plan_type": _mapping_str(state.plan_data, "type"),
     }
+
+
+def _windows(state: AccountState) -> tuple[dict[str, Any], ...]:
+    """Return normalized usage windows from the account state."""
+    windows = state.usage_data.get("windows", [])
+    if not isinstance(windows, list):
+        return ()
+    return tuple(window for window in windows if isinstance(window, dict))
+
+
+def _window_value(state: AccountState, window_id: str, key: str) -> Any:
+    """Return a value from a normalized usage window."""
+    for window in _windows(state):
+        if window.get("id") == window_id:
+            return window.get(key)
+    return None
+
+
+def _window_number(
+    state: AccountState,
+    window_id: str,
+    key: str,
+) -> int | float | None:
+    """Return a numeric value from a normalized usage window."""
+    value = _window_value(state, window_id, key)
+    return _number_or_none(value)
+
+
+def _window_datetime(state: AccountState, window_id: str) -> datetime | None:
+    """Return a normalized window reset datetime."""
+    value = _window_value(state, window_id, "reset_at")
+    if not isinstance(value, str):
+        return None
+    try:
+        return parse_datetime(value)
+    except ValueError:
+        return None
+
+
+def _window_attributes(state: AccountState, window_id: str) -> dict[str, Any]:
+    """Return common attributes for a window sensor."""
+    return _drop_none(
+        {
+            "window_id": window_id,
+            "label": _window_value(state, window_id, "label"),
+            "duration_seconds": _window_number(state, window_id, "duration_seconds"),
+            "reset_at": _iso(_window_datetime(state, window_id)),
+            "reset_after_seconds": _window_number(
+                state, window_id, "reset_after_seconds"
+            ),
+        }
+    )
+
+
+def _slug(value: str) -> str:
+    """Return a stable entity-safe slug for a window ID."""
+    result = "".join(char if char.isalnum() else "_" for char in value.lower())
+    return result.strip("_") or "window"
 
 
 def _codex_used_attributes(state: AccountState, window_key: str) -> dict[str, Any]:
