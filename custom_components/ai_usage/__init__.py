@@ -10,6 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import CONF_WEBHOOK_ID, DOMAIN, PLATFORMS
+from .lovelace import async_register_card
 from .runtime import AIUsageRuntime
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up AI Usage from a config entry."""
+    await async_register_card(hass)
     runtime = AIUsageRuntime(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = runtime
 
