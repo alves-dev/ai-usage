@@ -7,6 +7,9 @@ em janelas de tempo.
 Providers que não usam janelas ficam fora deste contrato e deverão receber uma
 extensão própria quando sua semântica estiver definida.
 
+O coletor manual e o padrão de versionamento estão documentados no README,
+junto com os comandos de teste e release.
+
 ## Exemplo completo
 
 ```json
@@ -116,6 +119,17 @@ janelas. Cada janela possui:
 
 O coletor deve enviar `duration_seconds` mesmo quando a API original usa nomes
 como `primary`, `secondary`, `session` ou `weekly`.
+
+No Codex, `primary_window` e `secondary_window` devem ser classificados por
+`limit_window_seconds`, nunca pelo nome do campo:
+
+| Duração | ID sugerido | Label sugerido |
+| ---: | --- | --- |
+| `18000` | `short` | `5-hour window` |
+| `604800` | `long` | `Weekly window` |
+
+Janelas ausentes devem ser omitidas, sem copiar os dados de outra janela e sem
+transformar a ausência em erro.
 
 O coletor não envia `available_percent`. A integração calcula:
 

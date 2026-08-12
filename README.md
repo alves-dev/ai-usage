@@ -293,15 +293,40 @@ read:
 
 - [Payload contract](docs/payload-contract.md)
 - [Device and sensor contract](docs/device-and-sensor-contract.md)
-- [Generic provider contract](docs/generic-provider-contract.md)
-- [Standardized window payload decisions](docs/standardized-window-payload-proposal.md)
-- [Manual collector](docs/manual-collector.md)
 - [AI Usage browser extension](https://github.com/alves-dev/ai-usage-extension)
-- [Stable account identity decision](docs/account-stable-id-decision.md)
-- [Implementation specification](docs/implementation-spec.md)
-- [Versioning](docs/versioning.md)
 - [Home Assistant compatibility](docs/compatibility.md)
 - [Changelog](CHANGELOG.md)
+
+### Manual Collector
+
+Generate a valid payload without sending it:
+
+```bash
+python3 scripts/manual_collector.py
+```
+
+Send it to a webhook:
+
+```bash
+python3 scripts/manual_collector.py \
+  --url "http://homeassistant.local:8123/api/webhook/<WEBHOOK_ID>" \
+  --provider codex \
+  --short-used 80 \
+  --long-used 45
+```
+
+The webhook ID is a secret. The script sends only the normalized payload.
+
+### Versioning
+
+The integration and its maintained collectors use the Home Assistant-style
+format `YYYY.M.patch`, for example `2026.8.1`. Development builds use the
+`-dev` suffix, for example `2026.8.1-dev`. The release workflow updates all
+version sources with:
+
+```bash
+python3 scripts/set_version.py 2026.8.1
+```
 
 ## Development
 
