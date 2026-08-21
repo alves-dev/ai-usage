@@ -16,6 +16,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, STATE_UNAVAILABLE, STATE_UNKNOWN, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import EntityCategory
@@ -826,7 +827,7 @@ def _account_device_info(
 ) -> DeviceInfo:
     """Return DeviceInfo for a provider account device."""
     metadata = runtime.get_provider_metadata(account.provider)
-    return DeviceInfo(
+    info = DeviceInfo(
         identifiers={
             (DOMAIN, f"{entry.entry_id}:{account.provider}:{account.account_key}")
         },
@@ -834,9 +835,14 @@ def _account_device_info(
         manufacturer=metadata.manufacturer,
         model=metadata.model,
         name=account.account_label,
-        via_device=(DOMAIN, entry.entry_id),
         configuration_url=metadata.configuration_url,
     )
+    parent = device_registry.async_get(runtime.hass).async_get_device(
+        identifiers={(DOMAIN, entry.entry_id)}
+    )
+    if parent is not None:
+        info["via_device_id"] = parent.id  # type: ignore[typeddict-unknown-key]
+    return info
 
 
 def _account_value(state: AccountState) -> str:

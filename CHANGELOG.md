@@ -12,6 +12,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 - Redacted webhook IDs from invalid-payload logs and sensor state attributes.
 - Moved provider image and Lovelace card file checks off the event loop.
+- Updated account devices to reference their parent device by registry ID.
 
 ## [2026.8.0] - 2026-08-12
 

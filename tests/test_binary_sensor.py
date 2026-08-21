@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 
@@ -31,6 +32,7 @@ def _entry() -> SimpleNamespace:
 
 def _runtime(account: AccountState) -> SimpleNamespace:
     return SimpleNamespace(
+        hass=SimpleNamespace(),
         integration_state=IntegrationState(),
         get_account_state=lambda _provider, _key: account,
         get_provider_metadata=lambda _provider: ProviderMetadata(
@@ -95,7 +97,18 @@ def test_device_info_helpers() -> None:
     entry = _entry()
     assert _integration_device_info(entry)["identifiers"] == {(DOMAIN, "entry-1")}
     account = AccountState("codex", "acct-test", "stable", "Test")
-    assert _account_device_info(entry, _runtime(account), account)["name"] == "Test"
+    runtime = _runtime(account)
+    parent = SimpleNamespace(id="parent-device-id")
+    registry = SimpleNamespace(
+        async_get_device=lambda *, identifiers: parent,
+    )
+    with patch(
+        "custom_components.ai_usage.binary_sensor.device_registry.async_get",
+        return_value=registry,
+    ):
+        info = _account_device_info(entry, runtime, account)
+    assert info["name"] == "Test"
+    assert info["via_device_id"] == "parent-device-id"
 
 
 def test_restore_binary_value() -> None:
