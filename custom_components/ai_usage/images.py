@@ -25,7 +25,7 @@ async def async_register_provider_static_paths(hass: HomeAssistant) -> None:
 
     for provider, filename in PROVIDER_IMAGE_FILES.items():
         path = image_dir / filename
-        if not path.is_file():
+        if not await hass.async_add_executor_job(path.is_file):
             urls[provider] = None
             continue
 

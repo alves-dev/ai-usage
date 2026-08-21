@@ -36,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             allowed_methods=(METH_POST,),
         )
         webhook_registered = True
-        _LOGGER.debug("Registered AI Usage webhook %s", webhook_id)
+        _LOGGER.debug("Registered AI Usage webhook")
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     except Exception:

@@ -21,7 +21,7 @@ async def async_register_card(hass: HomeAssistant) -> None:
         return
 
     card_path = Path(__file__).parent / "lovelace" / "ai-usage-windows-card.js"
-    if not card_path.is_file():
+    if not await hass.async_add_executor_job(card_path.is_file):
         return
 
     await hass.http.async_register_static_paths(

@@ -247,7 +247,11 @@ class AIUsageRuntime:
         try:
             payload: Any = await request.json()
         except Exception as err:
-            _LOGGER.warning("Invalid AI Usage webhook JSON on %s: %s", webhook_id, err)
+            _LOGGER.warning(
+                "Invalid AI Usage webhook JSON (status=%s): %s",
+                INGEST_STATUS_INVALID_JSON,
+                err,
+            )
             result = IngestResult(
                 ok=False,
                 http_status=HTTPStatus.BAD_REQUEST,

@@ -170,7 +170,9 @@ async def test_runtime_records_results_and_unscoped_errors(error_payload: dict) 
     send.assert_called_once()
 
 
-async def test_runtime_webhook_returns_bad_request_for_invalid_json() -> None:
+async def test_runtime_webhook_returns_bad_request_without_logging_webhook_id(
+    caplog,
+) -> None:
     """Invalid JSON should return the documented webhook response."""
     hass = _hass()
     runtime = _runtime_instance(hass)
@@ -189,6 +191,8 @@ async def test_runtime_webhook_returns_bad_request_for_invalid_json() -> None:
     assert response.status == HTTPStatus.BAD_REQUEST
     assert response.text is not None
     assert INGEST_STATUS_INVALID_JSON in response.text
+    assert "webhook-1" not in caplog.text
+    assert INGEST_STATUS_INVALID_JSON in caplog.text
 
 
 async def test_runtime_webhook_delegates_valid_payload(

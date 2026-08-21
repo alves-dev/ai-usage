@@ -16,6 +16,7 @@ async def test_register_provider_images_once() -> None:
     hass = SimpleNamespace(
         data={},
         http=SimpleNamespace(async_register_static_paths=AsyncMock()),
+        async_add_executor_job=AsyncMock(side_effect=lambda function: function()),
     )
 
     await async_register_provider_static_paths(hass)
@@ -31,6 +32,7 @@ async def test_register_provider_images_handles_missing_files() -> None:
     hass = SimpleNamespace(
         data={},
         http=SimpleNamespace(async_register_static_paths=AsyncMock()),
+        async_add_executor_job=AsyncMock(side_effect=lambda function: function()),
     )
     with patch(
         "custom_components.ai_usage.images.PROVIDER_IMAGE_FILES",

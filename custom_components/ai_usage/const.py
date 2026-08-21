@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "ai_usage"
 INTEGRATION_NAME = "AI Usage"
-INTEGRATION_VERSION = "2026.8.0"
+INTEGRATION_VERSION = "2026.8.1"
 
 CONF_WEBHOOK_ID = "webhook_id"
 
