@@ -20,7 +20,7 @@
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2026.4%2B-41BDF5?style=flat-square">
   <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom%20Integration-18BC9C?style=flat-square">
   <img alt="Providers" src="https://img.shields.io/badge/Providers-Codex%20%7C%20Ollama%20Cloud-7C3AED?style=flat-square">
-  <img alt="Version" src="https://img.shields.io/badge/Version-2026.8.0-41BDF5?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/Version-2026.8.1-41BDF5?style=flat-square">
 </p>
 
 <p align="center">

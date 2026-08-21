@@ -7,7 +7,7 @@ from typing import Any
 
 from homeassistant.const import UnitOfTime
 
-from custom_components.ai_usage.models import AccountState
+from custom_components.ai_usage.models import AccountState, IntegrationState
 from custom_components.ai_usage.sensor import (
     COMMON_ACCOUNT_SENSOR_DESCRIPTIONS,
     INTEGRATION_SENSOR_DESCRIPTIONS,
@@ -115,3 +115,13 @@ def test_low_level_integration_sensors_are_disabled_by_default() -> None:
         if item.entity_registry_enabled_default is False
     }
     assert disabled == {"last_source", "last_unscoped_error"}
+
+
+def test_ingest_status_attributes_do_not_expose_webhook_id() -> None:
+    """Webhook IDs must not be published as state attributes."""
+    description = next(
+        item
+        for item in INTEGRATION_SENSOR_DESCRIPTIONS
+        if item.key == "last_ingest_status"
+    )
+    assert "webhook_id" not in description.attributes_fn(IntegrationState())

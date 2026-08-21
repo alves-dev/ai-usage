@@ -607,9 +607,6 @@ class AIUsageIntegrationSensor(SensorEntity):
         attributes = self.entity_description.attributes_fn(
             self._runtime.integration_state
         )
-        if self.entity_description.key == "last_ingest_status":
-            attributes = dict(attributes)
-            attributes["webhook_id"] = self._entry.data.get("webhook_id")
         return attributes or None
 
     async def async_added_to_hass(self) -> None:

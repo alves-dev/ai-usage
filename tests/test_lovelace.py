@@ -13,6 +13,7 @@ async def test_register_card_serves_and_registers_frontend_module() -> None:
     hass = SimpleNamespace(
         data={},
         http=SimpleNamespace(async_register_static_paths=AsyncMock()),
+        async_add_executor_job=AsyncMock(side_effect=lambda function: function()),
     )
 
     with patch("custom_components.ai_usage.lovelace.frontend.add_extra_js_url") as add:
@@ -29,6 +30,7 @@ async def test_register_card_ignores_missing_bundle() -> None:
     hass = SimpleNamespace(
         data={},
         http=SimpleNamespace(async_register_static_paths=AsyncMock()),
+        async_add_executor_job=AsyncMock(side_effect=lambda function: function()),
     )
 
     with patch("custom_components.ai_usage.lovelace.Path.is_file", return_value=False):
